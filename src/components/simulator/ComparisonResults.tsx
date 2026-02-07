@@ -87,7 +87,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
           <Text style={styles.statValue}>
             {olderSnapshot.item_count} → {newerSnapshot.item_count}
           </Text>
-          <Text style={styles.statLabel}>Total de Itens</Text>
+          <Text style={styles.statLabel}>Total Items</Text>
         </View>
         <View style={styles.statItem}>
           <View style={styles.statIconContainer}>
@@ -123,10 +123,10 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
           </View>
         ) : (
           <View style={styles.diffItemsList}>
-            {/* Itens Adicionados */}
+            {/* Items Added */}
             {comparison.added_items && comparison.added_items.length > 0 && (
               <View style={styles.portfolioSection}>
-                <Text style={styles.diffSectionTitle}>Itens Adicionados</Text>
+                <Text style={styles.diffSectionTitle}>Items Added</Text>
                 <View style={styles.portfolioList}>
                   {comparison.added_items.map((item, index) => {
                   // Parse do nome do item (similar ao WhatIfSimulator)
@@ -187,10 +187,10 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
               </View>
             )}
 
-            {/* Itens Removidos */}
+            {/* Items Removed */}
             {comparison.removed_items && comparison.removed_items.length > 0 && (
               <View style={styles.portfolioSection}>
-                <Text style={styles.diffSectionTitle}>Itens Removidos</Text>
+                <Text style={styles.diffSectionTitle}>Items Removed</Text>
                 <View style={styles.portfolioList}>
                   {comparison.removed_items.map((item, index) => {
                   // Parse do nome do item (similar ao WhatIfSimulator)
@@ -256,10 +256,10 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
               </View>
             )}
 
-            {/* Itens com Quantidade Alterada */}
+            {/* Items with quantity changed */}
             {comparison.changed_items && comparison.changed_items.length > 0 && (
               <>
-                <Text style={styles.diffSectionTitle}>Quantidade Alterada</Text>
+                <Text style={styles.diffSectionTitle}>Quantity Changed</Text>
                 {comparison.changed_items.map((item, index) => (
                   <View key={index} style={[styles.diffItem, styles.diffItemChanged]}>
                     {/* Imagem */}
@@ -283,7 +283,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
                       </Text>
                       <View style={styles.diffItemMetaRow}>
                         <View style={[styles.diffBadge, styles.diffBadgeChanged]}>
-                          <Text style={styles.diffBadgeText}>Qtd Alterada</Text>
+                          <Text style={styles.diffBadgeText}>Qty Changed</Text>
                         </View>
                         <Text style={styles.diffItemMeta}>
                           {item.old_quantity} → {item.new_quantity}

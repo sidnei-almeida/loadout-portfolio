@@ -54,21 +54,33 @@ export const SnapshotsList: React.FC<SnapshotsListProps> = ({
 
   const getSnapshotBadge = (description: string | null) => {
     if (!description) return { text: 'USER', type: 'user' };
-    
-    const isAuto = 
-      description.toLowerCase().includes('automatic') ||
+    const lower = description.toLowerCase();
+    const isAuto =
+      lower.includes('automatic') ||
+      lower.includes('daily') ||
+      lower.includes('diario') ||
+      lower.includes('diário') ||
       description === 'Daily Automatic Snapshot';
-    
     return {
       text: isAuto ? 'AUTO' : 'USER',
       type: isAuto ? 'auto' : 'user',
     };
   };
 
+  /** Normalize backend description to US English for display (e.g. "Snapshot Diario" → "Daily Snapshot") */
+  const getSnapshotDisplayTitle = (description: string | null, formattedDate: string) => {
+    if (!description?.trim()) return `Snapshot from ${formattedDate}`;
+    const lower = description.toLowerCase().trim();
+    if (lower.includes('diario') || lower.includes('diário') || lower === 'daily automatic snapshot') {
+      return 'Daily Snapshot';
+    }
+    return description.trim();
+  };
+
   const renderSnapshotItem = ({ item }: { item: Snapshot }) => {
     const { formattedDate } = formatDate(item.snapshot_date);
     const badge = getSnapshotBadge(item.description);
-    const title = item.description?.trim() || `Snapshot from ${formattedDate}`;
+    const title = getSnapshotDisplayTitle(item.description, formattedDate);
 
     const isSelected = selectedSnapshotId === item.id;
     const isFirstSnapshot = firstSnapshotId === item.id;

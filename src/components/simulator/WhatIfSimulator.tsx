@@ -192,7 +192,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-      {/* Hero Section: 3 Valores (Original, Atual, Simulado) */}
+      {/* Hero Section: 3 values (Original, Current, Simulated) */}
       <View style={styles.heroCard}>
         <View style={styles.heroSection}>
           <Text style={styles.heroLabel}>Original</Text>
@@ -200,14 +200,14 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
         </View>
         <Text style={styles.heroArrow}>→</Text>
         <View style={styles.heroSection}>
-          <Text style={styles.heroLabel}>Atual</Text>
+          <Text style={styles.heroLabel}>Current</Text>
           <Text style={[styles.heroValue, { color: currentVsOriginalColor }]}>
             {formatCurrency(currentValue)}
           </Text>
         </View>
         <Text style={styles.heroArrow}>→</Text>
         <View style={styles.heroSection}>
-          <Text style={styles.heroLabel}>Simulado</Text>
+          <Text style={styles.heroLabel}>Simulated</Text>
           <Text style={[styles.heroValue, { color: simulatedVsOriginalColor }]}>
             {formatCurrency(simulatedValue)}
           </Text>
@@ -227,7 +227,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
         </View>
 
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Liquidez</Text>
+          <Text style={styles.metricLabel}>Liquidity</Text>
           <Text style={styles.metricValue}>{analysis.liquidity_score || 0}</Text>
           <View style={styles.liquidityProgress}>
             <View
@@ -249,7 +249,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
         <View style={styles.comparisonChartCard}>
           <LineChart
             data={{
-              labels: ['Original', 'Atual', 'Simulado'],
+              labels: ['Original', 'Current', 'Simulated'],
               datasets: [
                 {
                   data: [originalValue, currentValue, simulatedValue],
@@ -300,7 +300,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       {/* Seção: Composição do Portfólio */}
       {portfolioItems.length > 0 && (
         <View style={styles.portfolioSection}>
-          <Text style={styles.sectionTitle}>Itens neste Snapshot</Text>
+          <Text style={styles.sectionTitle}>Items in this Snapshot</Text>
           <View style={styles.portfolioList}>
             {portfolioItems.map((item, index) => (
               <React.Fragment key={item.id || index}>

@@ -41,7 +41,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
         <View style={styles.textContainer}>
           <Text style={styles.title}>Comparison Mode</Text>
           <Text style={styles.subtitle}>
-            Selecione outro snapshot na lista abaixo para comparar
+            Select another snapshot from the list below to compare
           </Text>
         </View>
       </View>
@@ -57,7 +57,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
               </Text>
             ) : (
               <Text style={styles.snapshotTitle}>
-                Snapshot de {formatDate(firstSnapshot.snapshot_date)}
+                Snapshot from {formatDate(firstSnapshot.snapshot_date)}
               </Text>
             )}
             <View style={styles.snapshotMeta}>
@@ -66,7 +66,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
               </Text>
               <Text style={styles.snapshotMetaSeparator}>•</Text>
               <Text style={styles.snapshotMetaText}>
-                {firstSnapshot.item_count || 0} {firstSnapshot.item_count === 1 ? 'item' : 'itens'}
+                {firstSnapshot.item_count || 0} {firstSnapshot.item_count === 1 ? 'item' : 'items'}
               </Text>
             </View>
           </View>
