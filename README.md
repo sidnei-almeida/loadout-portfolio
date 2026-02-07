@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="Smartphone.png" alt="Loadout app — dashboard, inventory, simulator" width="100%" />
+
 <img src="assets/images/LOADOUT.png" alt="Loadout" width="180" />
 
 # Loadout
