@@ -1,0 +1,100 @@
+# Dependências
+node_modules/
+
+# Builds e artefatos Android
+android/app/build/
+android/build/
+android/.gradle/
+android/**/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+local.properties
+.kotlin/
+
+# Xcode / iOS
+ios/build/
+ios/Pods/
+ios/**/build/
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+**/.xcode.env.local
+
+# Metro / React Native
+.metro-health-check*
+*.jsbundle
+
+# Logs e temporários
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+
+# Ambiente e segredos
+.env
+.env.local
+.env.*.local
+*.keystore
+!debug.keystore
+
+# Testes e cobertura
+coverage/
+*.lcov
+/reports
+
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+
+# IDE (opcional: remova se quiser versionar)
+.vscode/
+*.swp
+*.swo
+*~
+
+# Buck
+.buckd
+buck-out/
+
+# Release (APKs gerados para distribuição)
+release/*.apk
+release/*.aab
+
+# NDK / CMake (build nativo)
+android/app/.cxx/
+*.o
+*.a
+*.so
+
+# Ruby (CocoaPods)
+vendor/bundle
+.bundle
+*.gem
+.ruby-version
+
+# Patch-package (opcional: alguns commitam)
+# patches/
+
+# Arquivos grandes que devem ir para LFS (se aparecerem na raiz)
+# *.mp4 *.zip etc. estão no .gitattributes com LFS

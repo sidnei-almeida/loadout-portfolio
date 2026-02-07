@@ -1,0 +1,69 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/JetBrainsMono-Bold.ttf",
+      "sha1": "68d3e3f24bf089ed995af31bc0cbb27e08db31f9"
+    },
+    {
+      "path": "assets/fonts/JetBrainsMono-Regular.ttf",
+      "sha1": "ee14b915b19dc486cfbe11aa1e5ffb73f1c64b88"
+    },
+    {
+      "path": "assets/fonts/Orbitron-Black.ttf",
+      "sha1": "76f9215a95e776fe460e270b3cc997aabf02575a"
+    },
+    {
+      "path": "assets/fonts/Orbitron-Bold.ttf",
+      "sha1": "a6b167a53d22273e176f8526f7a699905df51f77"
+    },
+    {
+      "path": "assets/fonts/Orbitron-ExtraBold.ttf",
+      "sha1": "3e47c864b1812f9033be00c4fb6a27ef91721cc3"
+    },
+    {
+      "path": "assets/fonts/Orbitron-Medium.ttf",
+      "sha1": "d08660320fdf07403d9678458285391de54e6d24"
+    },
+    {
+      "path": "assets/fonts/Orbitron-Regular.ttf",
+      "sha1": "537212958595d84234b471e363b12154864212ae"
+    },
+    {
+      "path": "assets/fonts/Orbitron-SemiBold.ttf",
+      "sha1": "f65edd6f8d37302fa3c422fcdd6e202622770c68"
+    },
+    {
+      "path": "assets/fonts/Rajdhani-Bold.ttf",
+      "sha1": "fb82c1992ff13cb2bc6fa12c29ffcb89974adb7b"
+    },
+    {
+      "path": "assets/fonts/Rajdhani-Light.ttf",
+      "sha1": "446edd8562d2ad5ce7e4a345cf87759cfa47bd39"
+    },
+    {
+      "path": "assets/fonts/Rajdhani-Medium.ttf",
+      "sha1": "7837ff8a9aea59e742e894ba8956c18fb7c16d4b"
+    },
+    {
+      "path": "assets/fonts/Rajdhani-Regular.ttf",
+      "sha1": "b15421316b5c5bb92af38cb6b8db1a8df554cec4"
+    },
+    {
+      "path": "assets/fonts/Rajdhani-SemiBold.ttf",
+      "sha1": "631daaffec8f19b9b0c23a80b3465a278993e22a"
+    },
+    {
+      "path": "assets/images/LOADOUT.png",
+      "sha1": "caf223fe9bc39a9dc0b8bf568e516e3709d05d27"
+    },
+    {
+      "path": "assets/images/logo.png",
+      "sha1": "62d640786189a59cb4ecadc87531db3d7e438630"
+    },
+    {
+      "path": "assets/videos/smoke-vertical.mp4",
+      "sha1": "a8ef38f70220048f763c092c1849dc4d1a129253"
+    }
+  ]
+}
