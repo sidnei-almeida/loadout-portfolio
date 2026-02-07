@@ -77,10 +77,6 @@ ehthumbs.db
 .buckd
 buck-out/
 
-# Release (APKs gerados para distribuição)
-release/*.apk
-release/*.aab
-
 # NDK / CMake (build nativo)
 android/app/.cxx/
 *.o
