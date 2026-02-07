@@ -10,6 +10,9 @@ android/**/build/
 *.aab
 *.ap_
 *.dex
+# Exceção: versionar APKs na pasta release (enviados via Git LFS)
+!release/*.apk
+!release/*.aab
 
 # Android Studio / IntelliJ
 .idea/
