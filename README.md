@@ -1,10 +1,6 @@
 <div align="center">
 
-<img src="Smartphone.png" alt="Loadout app — dashboard, inventory, simulator" width="100%" />
-
 <img src="assets/images/LOADOUT.png" alt="Loadout" width="180" />
-
-# Loadout
 
 **Steam item portfolio — React Native**
 
@@ -14,6 +10,8 @@ Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage
 [![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Platform](https://img.shields.io/badge/Android%20%7C%20iOS-3DDC84?style=flat-square&logo=android)](.)
+
+<img src="Smartphone.png" alt="Loadout app — dashboard, inventory, simulator" width="100%" />
 
 </div>
 
