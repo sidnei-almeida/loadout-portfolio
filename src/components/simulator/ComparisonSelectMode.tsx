@@ -7,7 +7,7 @@ import {
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { CompareIcon } from '@components/common';
-import type { Snapshot } from '@services/snapshots';
+import type { Snapshot } from '@types/snapshot';
 
 interface ComparisonSelectModeProps {
   firstSnapshot: Snapshot;

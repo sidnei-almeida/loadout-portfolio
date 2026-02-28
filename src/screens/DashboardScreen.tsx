@@ -8,12 +8,10 @@ import { ItemDetailModal } from '@components/items/ItemDetailModal';
 import { usePortfolio } from '@hooks/usePortfolio';
 import { usePortfolioHistory } from '@hooks/usePortfolioHistory';
 import { useAuth } from '@hooks/useAuth';
-import { syncInventory, updatePriceHistoryForInventory } from '@services/inventory';
-import { queryClient } from '@services/queryClient';
-import { spacing, colors } from '@theme';
+import { storage } from '@services/storage';
+import { spacing } from '@theme';
 import type { Item } from '@types/item';
 
-// Helper para garantir valores seguros
 const safeSpacing = spacing || { md: 16, xl: 20, xxl: 28 };
 
 type RefreshStepStatus = 'pending' | 'processing' | 'completed';
@@ -25,8 +23,6 @@ interface RefreshStep {
 }
 
 export const DashboardScreen: React.FC = () => {
-  // All hooks must be called unconditionally and in the same order
-  // useState hooks first
   const [selectedDays, setSelectedDays] = useState(30);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -36,20 +32,18 @@ export const DashboardScreen: React.FC = () => {
     { id: 'prices', label: 'Updating price history', status: 'pending' },
     { id: 'load', label: 'Loading updated data', status: 'pending' },
   ]);
-  
-  // Custom hooks after useState
-  const { token, user } = useAuth();
-  const { portfolio, isLoading, refetch, totalValue, items } = usePortfolio();
+
+  const { steamId } = useAuth();
+  const { items, isLoading, refetch, totalValue, invalidate } = usePortfolio();
   const { history, isLoading: isLoadingHistory, refetch: refetchHistory } = usePortfolioHistory(selectedDays);
 
-  // Calcular mudança de valor baseado no histórico (comparando com o primeiro snapshot)
   const valueChange = useMemo(() => {
-    if (!history || history.length < 1) {
+    if (!history || history.length < 2) {
       return undefined;
     }
 
     const currentValue = history[history.length - 1].total_value;
-    const firstValue = history[0].total_value; // Primeiro snapshot
+    const firstValue = history[0].total_value;
     const changeValue = currentValue - firstValue;
     const changePercent = firstValue > 0 ? (changeValue / firstValue) * 100 : 0;
 
@@ -79,75 +73,38 @@ export const DashboardScreen: React.FC = () => {
   }, [resetSteps]);
 
   const handleRefresh = async () => {
-    if (!token || isRefreshing) return;
+    if (!steamId || isRefreshing) { return; }
 
-    console.log('[DASHBOARD] 🔄 Iniciando refresh completo...');
+    if (storage.isOnCooldown('inventory_sync')) {
+      const remaining = Math.ceil(storage.getCooldownRemaining('inventory_sync') / 1000);
+      Alert.alert('Cooldown', `Please wait ${remaining}s before refreshing again.`);
+      return;
+    }
+
     setIsRefreshing(true);
     resetSteps();
 
     try {
-      // Etapa 1: Sincronizar inventário
-      console.log('[DASHBOARD] 📡 Etapa 1: Sincronizando inventário com Steam...');
+      // TODO: Wire to Steam sync service (Passo 5)
       updateStep('sync', 'processing');
-      const syncResult = await syncInventory(token, user?.steam_id);
-      console.log('[DASHBOARD] ✅ Sincronização concluída:', syncResult);
+      await new Promise(r => setTimeout(r, 500));
       updateStep('sync', 'completed');
 
-      // Pequeno delay para melhor visualização
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Etapa 2: Atualizar histórico de preços
-      console.log('[DASHBOARD] 💰 Etapa 2: Atualizando histórico de preços...');
       updateStep('prices', 'processing');
-      await updatePriceHistoryForInventory(token).catch((error) => {
-        console.warn('[DASHBOARD] Erro ao atualizar histórico (não crítico):', error);
-      });
+      await new Promise(r => setTimeout(r, 500));
       updateStep('prices', 'completed');
 
-      // Pequeno delay para melhor visualização
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Etapa 3: Invalidar cache e recarregar dados
-      console.log('[DASHBOARD] 🔄 Etapa 3: Invalidando cache e recarregando dados...');
       updateStep('load', 'processing');
-      
-      // Invalidar cache do React Query antes de fazer refetch
-      await queryClient.invalidateQueries({ 
-        queryKey: ['portfolio', user?.steam_id] 
-      });
-      await queryClient.invalidateQueries({ 
-        queryKey: ['portfolio-history', user?.steam_id, selectedDays] 
-      });
-      
-      // Forçar refetch ignorando cache
-      const [portfolioResult, historyResult] = await Promise.all([
-        refetch(),
-        refetchHistory()
-      ]);
-      
-      console.log('[DASHBOARD] ✅ Dados recarregados:', {
-        portfolio: portfolioResult.data?.items?.length || 0,
-        history: historyResult.data?.history?.length || 0,
-      });
-      
+      invalidate();
+      await refetch();
+      await refetchHistory();
       updateStep('load', 'completed');
+
+      storage.setCooldown('inventory_sync');
     } catch (error) {
-      console.error('[DASHBOARD] Erro ao atualizar:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Resetar steps em caso de erro
       setIsRefreshing(false);
       resetSteps();
-      
-      if (errorMessage === 'STEAM_SESSION_INVALID') {
-        Alert.alert(
-          'Session Expired',
-          'Your Steam session expired. Please go to Profile and update your session.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert('Error', 'Could not update data. Please try again.');
-      }
+      Alert.alert('Error', 'Could not update data. Please try again.');
     }
   };
 
@@ -161,7 +118,7 @@ export const DashboardScreen: React.FC = () => {
     setSelectedItem(null);
   };
 
-  if (isLoading && !portfolio) {
+  if (isLoading && items.length === 0) {
     return (
       <Screen showPremiumBackground={false}>
         <Loading fullScreen message="Loading portfolio..." />
@@ -169,13 +126,11 @@ export const DashboardScreen: React.FC = () => {
     );
   }
 
-  // Calcular step atual baseado no status das etapas
   const currentStepIndex = refreshSteps.findIndex(step => step.status === 'processing');
   const currentStep = currentStepIndex >= 0 ? currentStepIndex : refreshSteps.length - 1;
 
   return (
     <View style={styles.screenContainer}>
-      {/* Scrollable Content */}
       <Screen scrollable style={styles.scrollContent} showPremiumBackground={false}>
         <ValueCard
           totalValue={totalValue}
@@ -198,7 +153,6 @@ export const DashboardScreen: React.FC = () => {
         />
       </Screen>
 
-      {/* Refresh Progress Modal */}
       <RefreshProgressModal
         visible={isRefreshing}
         currentStep={currentStep}
@@ -219,13 +173,12 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     position: 'relative',
-    backgroundColor: 'transparent', // Transparente para o vídeo aparecer
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: safeSpacing.md,
     paddingTop: safeSpacing.xl,
-    paddingBottom: safeSpacing.xxl * 2, // Extra padding at bottom for last items
-    zIndex: 1, // Ensure content is above video background
+    paddingBottom: safeSpacing.xxl * 2,
+    zIndex: 1,
   },
 });
-

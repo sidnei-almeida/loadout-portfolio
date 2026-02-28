@@ -1,41 +1,100 @@
 /**
- * Hook para buscar dados do portfolio
+ * Hook for the Dashboard — portfolio value, items grid, and analytics.
+ *
+ * Data flows exclusively through local repos + analytics service.
+ * React Query is still used for cache-invalidation and loading states.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { useAuth } from './useAuth';
-import { getPortfolioData } from '@services/portfolio';
-import type { Portfolio } from '@types/portfolio';
+import {
+  getInventory,
+  getTotalValue,
+  getItemCount,
+} from '../database/repositories/inventoryRepo';
+import {
+  calculatePortfolioAnalytics,
+  type PortfolioAnalytics,
+} from '../services/analytics/portfolioAnalytics';
+import type { InventoryGroupedRow } from '../database/repositories/inventoryRepo';
+import type { Item } from '@types/item';
+
+// ---------------------------------------------------------------------------
+// Mapping: InventoryGroupedRow → Item (the shape the UI already expects)
+// ---------------------------------------------------------------------------
+
+function toItem(row: InventoryGroupedRow): Item {
+  return {
+    market_hash_name: row.market_hash_name,
+    image_url: row.image_url_hd || row.icon_url || undefined,
+    price: row.current_price * row.quantity,
+    current_price: row.current_price,
+    quantity: row.quantity,
+    is_stattrak: row.is_stattrak === 1,
+    rarity: row.rarity_color || undefined,
+    category: row.category || undefined,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Query keys (centralised for easy invalidation)
+// ---------------------------------------------------------------------------
+
+export const PORTFOLIO_KEY = ['portfolio-local'] as const;
+export const ANALYTICS_KEY = ['portfolio-analytics'] as const;
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export const usePortfolio = () => {
-  const { token, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
+  // ---- Inventory items (grouped) ----
   const {
-    data: portfolio,
+    data: inventoryData,
     isLoading,
     error,
     refetch,
-  } = useQuery<Portfolio>({
-    queryKey: ['portfolio', user?.steam_id],
+  } = useQuery({
+    queryKey: PORTFOLIO_KEY,
     queryFn: () => {
-      if (!user?.steam_id || !token) {
-        throw new Error('User or token not available');
-      }
-      return getPortfolioData(user.steam_id, token);
+      const rows = getInventory();
+      const items = rows.map(toItem);
+      const totalValue = getTotalValue();
+      const itemsCount = getItemCount();
+      return { items, totalValue, itemsCount };
     },
-    enabled: !!user?.steam_id && !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    enabled: isAuthenticated,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
+  // ---- Analytics (heavier computation, separate cache entry) ----
+  const { data: analytics } = useQuery<PortfolioAnalytics>({
+    queryKey: ANALYTICS_KEY,
+    queryFn: () => calculatePortfolioAnalytics(),
+    enabled: isAuthenticated && (inventoryData?.items?.length ?? 0) > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // ---- Invalidation helper (call after sync / price refresh) ----
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [...PORTFOLIO_KEY] });
+    queryClient.invalidateQueries({ queryKey: [...ANALYTICS_KEY] });
+  }, [queryClient]);
+
   return {
-    portfolio,
+    items: inventoryData?.items ?? [],
+    totalValue: inventoryData?.totalValue ?? 0,
+    itemsCount: inventoryData?.itemsCount ?? 0,
+    analytics: analytics ?? null,
     isLoading,
     error,
     refetch,
-    totalValue: portfolio?.total_value || 0,
-    items: portfolio?.items || [],
-    itemsCount: portfolio?.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0,
+    invalidate,
   };
 };
-

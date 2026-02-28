@@ -7,6 +7,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useProfileCard } from '@hooks/useProfileCard';
 import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import { spacing, typography } from '@theme';
+import { LegalDisclaimer } from '@components/common/LegalDisclaimer';
 
 export const ProfileScreen: React.FC = () => {
   const { logout } = useAuth();
@@ -31,7 +32,7 @@ export const ProfileScreen: React.FC = () => {
             await logout();
           },
         },
-      ]
+      ],
     );
   };
 
@@ -49,32 +50,35 @@ export const ProfileScreen: React.FC = () => {
         {profileCard && (
           <>
             <ProfileHeader profileCard={profileCard} />
-            
+
             {profileCard.trust_status && (
               <SecurityStatus trustStatus={profileCard.trust_status} />
             )}
 
-            <CookieStatus 
+            <CookieStatus
               onCapturePress={() => setIsCookieModalVisible(true)}
               refreshTrigger={cookieRefreshTrigger}
             />
           </>
         )}
-        
+
         <CookieCaptureModal
           visible={isCookieModalVisible}
           onClose={() => setIsCookieModalVisible(false)}
           onSuccess={() => {
-            // Recarregar dados do perfil e status dos cookies após captura bem-sucedida
             refetch();
             setCookieRefreshTrigger(prev => prev + 1);
           }}
         />
-        
+
         <View style={styles.actions}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
             <Text style={styles.logoutButtonText}>Sign out</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.disclaimerContainer}>
+          <LegalDisclaimer showPrivacyLink />
         </View>
       </View>
       <AlertDialog />
@@ -83,18 +87,10 @@ export const ProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  actions: {
-    marginTop: spacing.lg,
-    gap: spacing.md,
-  },
+  container: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
+  actions: { marginTop: spacing.lg, gap: spacing.md },
+  disclaimerContainer: { marginTop: spacing.xl, paddingBottom: spacing.md, alignItems: 'center' },
   logoutButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
@@ -114,4 +110,3 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
-

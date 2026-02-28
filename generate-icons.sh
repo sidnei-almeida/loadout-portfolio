@@ -29,7 +29,7 @@ if ! command -v convert &> /dev/null; then
 fi
 
 # Criar diretórios se não existirem
-mkdir -p ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset
+mkdir -p ios/Loadout/Images.xcassets/AppIcon.appiconset
 mkdir -p android/app/src/main/res/mipmap-mdpi
 mkdir -p android/app/src/main/res/mipmap-hdpi
 mkdir -p android/app/src/main/res/mipmap-xhdpi
@@ -39,16 +39,16 @@ mkdir -p android/app/src/main/res/mipmap-xxxhdpi
 echo "📱 Gerando ícones iOS..."
 
 # iOS - Gerar todos os tamanhos
-magick "$ICON_BASE" -resize 40x40 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-20@2x.png
-magick "$ICON_BASE" -resize 60x60 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-20@3x.png
-magick "$ICON_BASE" -resize 58x58 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-29@2x.png
-magick "$ICON_BASE" -resize 87x87 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-29@3x.png
-magick "$ICON_BASE" -resize 80x80 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-40@2x.png
-magick "$ICON_BASE" -resize 120x120 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-40@3x.png
-magick "$ICON_BASE" -resize 120x120 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-60@2x.png
-magick "$ICON_BASE" -resize 180x180 ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-60@3x.png
+magick "$ICON_BASE" -resize 40x40 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-20@2x.png
+magick "$ICON_BASE" -resize 60x60 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-20@3x.png
+magick "$ICON_BASE" -resize 58x58 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-29@2x.png
+magick "$ICON_BASE" -resize 87x87 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-29@3x.png
+magick "$ICON_BASE" -resize 80x80 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-40@2x.png
+magick "$ICON_BASE" -resize 120x120 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-40@3x.png
+magick "$ICON_BASE" -resize 120x120 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-60@2x.png
+magick "$ICON_BASE" -resize 180x180 ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-60@3x.png
 # App Store - 1024x1024 (sem transparência para iOS)
-magick "$ICON_BASE" -resize 1024x1024 -background white -alpha remove ios/SkinfolioRN/Images.xcassets/AppIcon.appiconset/icon-1024.png
+magick "$ICON_BASE" -resize 1024x1024 -background white -alpha remove ios/Loadout/Images.xcassets/AppIcon.appiconset/icon-1024.png
 
 echo "✅ Ícones iOS gerados!"
 

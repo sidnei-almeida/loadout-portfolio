@@ -10,7 +10,7 @@ import {
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { DeleteIcon, PackageIcon, InventoryIcon } from '@components/common';
-import type { Snapshot } from '@services/snapshots';
+import type { Snapshot } from '@types/snapshot';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {

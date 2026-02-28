@@ -13,7 +13,7 @@ import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
 import { ImagePlaceholderIcon } from '@components/common/ImagePlaceholderIcon';
-import type { Snapshot, SnapshotAnalysis } from '@services/snapshots';
+import type { Snapshot, SnapshotAnalysis } from '@types/snapshot';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {

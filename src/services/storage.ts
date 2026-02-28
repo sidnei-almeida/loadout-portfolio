@@ -1,43 +1,131 @@
 /**
- * Serviço de storage usando AsyncStorage
+ * Key-value storage powered by react-native-mmkv.
+ *
+ * Replaces the old AsyncStorage-based module.  MMKV is synchronous and
+ * ~30× faster, which matters for cooldown checks and auth-gate reads
+ * that happen on every app start.
+ *
+ * Domains:
+ *  - Auth / session  → steam_id, cookies presence flag
+ *  - User profile    → cached Steam profile card (JSON)
+ *  - Cooldowns       → timestamps keyed by operation name
+ *  - Preferences     → currency, language, theme, etc.
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MMKV } from 'react-native-mmkv';
 
-const TOKEN_KEY = 'authToken';
-const USER_KEY = 'userData';
+export const mmkv = new MMKV({ id: 'loadout-storage' });
+
+// ---------------------------------------------------------------------------
+// Keys
+// ---------------------------------------------------------------------------
+
+const Keys = {
+  STEAM_ID: 'auth.steam_id',
+  HAS_SESSION: 'auth.has_session',
+  PROFILE_CARD: 'cache.profile_card',
+  STEAM_API_KEY: 'config.steam_api_key',
+  CURRENCY: 'prefs.currency',
+  COOLDOWN_PREFIX: 'cooldown.',
+} as const;
+
+// ---------------------------------------------------------------------------
+// Auth / Session
+// ---------------------------------------------------------------------------
 
 export const storage = {
-  // Token
-  async setToken(token: string): Promise<void> {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
+  // ---- Steam identity ----
+
+  setSteamId(steamId: string): void {
+    mmkv.set(Keys.STEAM_ID, steamId);
   },
 
-  async getToken(): Promise<string | null> {
-    return AsyncStorage.getItem(TOKEN_KEY);
+  getSteamId(): string | null {
+    return mmkv.getString(Keys.STEAM_ID) ?? null;
   },
 
-  async removeToken(): Promise<void> {
-    await AsyncStorage.removeItem(TOKEN_KEY);
+  setHasSession(value: boolean): void {
+    mmkv.set(Keys.HAS_SESSION, value);
   },
 
-  // User data
-  async setUser(user: any): Promise<void> {
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  getHasSession(): boolean {
+    return mmkv.getBoolean(Keys.HAS_SESSION) ?? false;
   },
 
-  async getUser(): Promise<any | null> {
-    const data = await AsyncStorage.getItem(USER_KEY);
-    return data ? JSON.parse(data) : null;
+  // ---- Cached profile card (JSON blob) ----
+
+  setProfileCard(card: Record<string, unknown>): void {
+    mmkv.set(Keys.PROFILE_CARD, JSON.stringify(card));
   },
 
-  async removeUser(): Promise<void> {
-    await AsyncStorage.removeItem(USER_KEY);
+  getProfileCard<T = Record<string, unknown>>(): T | null {
+    const raw = mmkv.getString(Keys.PROFILE_CARD);
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return null;
+    }
   },
 
-  // Clear all
-  async clear(): Promise<void> {
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+  // ---- Steam API Key (embedded or user-provided) ----
+
+  setSteamApiKey(key: string): void {
+    mmkv.set(Keys.STEAM_API_KEY, key);
+  },
+
+  getSteamApiKey(): string | null {
+    return mmkv.getString(Keys.STEAM_API_KEY) ?? null;
+  },
+
+  // ---- Preferences ----
+
+  setCurrency(code: string): void {
+    mmkv.set(Keys.CURRENCY, code);
+  },
+
+  getCurrency(): string {
+    return mmkv.getString(Keys.CURRENCY) ?? 'USD';
+  },
+
+  // ---- Cooldowns (rate-limit tracking) ----
+
+  /**
+   * Records "now" as the last time `operation` ran.
+   */
+  setCooldown(operation: string): void {
+    mmkv.set(`${Keys.COOLDOWN_PREFIX}${operation}`, Date.now());
+  },
+
+  /**
+   * Returns the remaining cooldown in milliseconds (0 if expired).
+   * @param operation  Unique name (e.g. "price_refresh", "inventory_sync")
+   * @param windowMs   Cooldown window in ms (default 3 min)
+   */
+  getCooldownRemaining(operation: string, windowMs: number = 3 * 60 * 1000): number {
+    const lastRun = mmkv.getNumber(`${Keys.COOLDOWN_PREFIX}${operation}`);
+    if (!lastRun) {
+      return 0;
+    }
+    const elapsed = Date.now() - lastRun;
+    return Math.max(0, windowMs - elapsed);
+  },
+
+  /**
+   * Returns `true` when the operation is still in cooldown.
+   */
+  isOnCooldown(operation: string, windowMs: number = 3 * 60 * 1000): boolean {
+    return this.getCooldownRemaining(operation, windowMs) > 0;
+  },
+
+  // ---- Housekeeping ----
+
+  /**
+   * Wipes everything (logout).
+   */
+  clear(): void {
+    mmkv.clearAll();
   },
 };
-

@@ -48,12 +48,12 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
 
             <Text style={styles.sectionTitle}>1. ACCEPTANCE OF TERMS</Text>
             <Text style={styles.paragraph}>
-              By accessing and using the LOADOUT by Elite Skins app, you agree to comply with and be bound by these Terms of Service. If you do not agree to any part of these terms, you must not use our service.
+              By accessing and using the Loadout Portfolio app, you agree to comply with and be bound by these Terms of Service. If you do not agree to any part of these terms, you must not use our service.
             </Text>
 
             <Text style={styles.sectionTitle}>2. STEAM AUTHENTICATION</Text>
             <Text style={styles.paragraph}>
-              LOADOUT uses authentication through the Steam platform. By signing in, you authorize our app to access public information from your Steam account, including your Counter-Strike 2 item inventory. We do not collect or store Steam passwords or login credentials.
+              LOADOUT uses authentication through the Steam platform. By signing in, you authorize our app to access public information from your Steam account, including your Counter-Strike 2 item inventory. We do not collect or store Steam passwords or login credentials. All credentials are exchanged directly between your device and Valve's servers.
             </Text>
 
             <Text style={styles.paragraph}>
@@ -69,13 +69,13 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
               You must not use the app for any illegal or unauthorized purpose, including but not limited to violating any local, national, or international regulation.
             </Text>
 
-            <Text style={styles.sectionTitle}>4. DATA AND PRIVACY</Text>
+            <Text style={styles.sectionTitle}>4. DATA AND PRIVACY (LOCAL-FIRST)</Text>
             <Text style={styles.paragraph}>
-              We collect only public information from your Steam account that is necessary to provide our services. Your personal information is handled in accordance with our Privacy Policy.
+              LOADOUT operates on a 100% Local-First architecture. All data — including your inventory, price history, snapshots, and preferences — is stored exclusively on your device using on-device databases (SQLite and MMKV). We do not operate servers, cloud databases, or any remote data collection infrastructure.
             </Text>
 
             <Text style={styles.paragraph}>
-              You retain all rights to your data and may request its removal at any time by contacting us.
+              Your Steam credentials are exchanged directly between your device and Valve's servers via a secure WebView. We never intercept, transmit, or store your password. If you uninstall the app, all locally stored data is permanently and irreversibly deleted.
             </Text>
 
             <Text style={styles.sectionTitle}>5. SERVICE AVAILABILITY</Text>
@@ -83,18 +83,22 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
               We strive to keep the service available 24/7 but do not guarantee that the app will always be available, uninterrupted, or error-free. We may suspend or modify the service at any time, with or without notice.
             </Text>
 
-            <Text style={styles.sectionTitle}>6. DATA ACCURACY</Text>
+            <Text style={styles.sectionTitle}>6. DATA ACCURACY AND MONETARY VALUES</Text>
             <Text style={styles.paragraph}>
-              Prices and values shown in the app are for informational purposes only. Although we strive to keep information up to date and accurate, we do not guarantee the accuracy, completeness, or timeliness of any information in the app.
+              Prices and values shown in the app are for informational purposes only. All monetary figures are estimates derived from publicly available Steam Community Market data. The app does NOT facilitate, broker, or enable any purchase, sale, or exchange of virtual items for real currency.
             </Text>
 
             <Text style={styles.paragraph}>
-              You acknowledge that item prices may vary and that the values shown are estimates based on third-party data.
+              You acknowledge that item prices may vary and that the values shown are estimates based on third-party data. No financial advice is provided.
             </Text>
 
             <Text style={styles.sectionTitle}>7. INTELLECTUAL PROPERTY</Text>
             <Text style={styles.paragraph}>
-              All content in the app, including but not limited to text, graphics, logos, icons, and software, is the property of Elite Skins or its content suppliers and is protected by copyright and other intellectual property laws.
+              Loadout Portfolio is an independent, third-party application. It is NOT affiliated with, endorsed by, sponsored by, or in any way officially connected to Valve Corporation. Counter-Strike, Counter-Strike 2 (CS2), Steam, and the Steam logo are registered trademarks and/or trademarks of Valve Corporation. All in-game item names and images are the property of Valve Corporation.
+            </Text>
+
+            <Text style={styles.paragraph}>
+              The app's own interface, code, and original design elements are the property of the developer and are protected by applicable intellectual property laws.
             </Text>
 
             <Text style={styles.sectionTitle}>8. LIMITATION OF LIABILITY</Text>

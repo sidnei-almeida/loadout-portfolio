@@ -5,7 +5,7 @@
 echo "🔧 Corrigindo erros de CMake (codegen)..."
 echo ""
 
-cd /home/sidnei/Documentos/GitHub/SkinfolioRN || exit 1
+cd /home/sidnei/Documents/GitHub/loadout-portfolio || exit 1
 
 # 1. Limpar cache do CMake e build
 echo "🧹 Limpando cache do CMake..."

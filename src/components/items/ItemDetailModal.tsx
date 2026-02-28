@@ -17,10 +17,10 @@ import Svg, { Polygon, Defs, LinearGradient as SvgLinearGradient, Stop, Rect } f
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
-import { getItemHistory } from '@services/prices';
-import { useAuth } from '@hooks/useAuth';
+import { getItemHistory } from '@services/itemHistory';
 import type { Item } from '@types/item';
-import type { ItemHistoryResponse } from '@services/prices';
+import type { ItemHistoryResponse } from '@types/prices';
+import { logger } from '@utils/logger';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {
@@ -159,7 +159,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   item,
   onClose,
 }) => {
-  const { token } = useAuth();
   const [selectedDays, setSelectedDays] = useState(30);
   const [history, setHistory] = useState<ItemHistoryResponse | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -180,7 +179,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
   // Carregar histórico quando período ou item mudar
   useEffect(() => {
-    if (!visible || !item || !token) {
+    if (!visible || !item) {
       if (!visible) {
         setHistory(null);
         setHistoryError(null);
@@ -202,21 +201,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
           // Se não temos cache ou cache está vazio, carregar 30D
           if (!sourceData || !sourceData.chart || sourceData.chart.length === 0) {
-            console.log('[ITEM_MODAL] Carregando dados de 30D para filtrar 7D...');
-            sourceData = await getItemHistory(item.market_hash_name, 30, token);
+            logger.log('[ITEM_MODAL] Carregando dados de 30D para filtrar 7D...');
+            sourceData = getItemHistory(item.market_hash_name, 30);
             if (sourceData && sourceData.chart && sourceData.chart.length > 0) {
               fullHistoryRef.current = sourceData;
-              console.log('[ITEM_MODAL] Dados de 30D carregados:', sourceData.chart.length, 'pontos');
+              logger.log('[ITEM_MODAL] Dados de 30D carregados:', sourceData.chart.length, 'pontos');
             }
           } else {
-            console.log('[ITEM_MODAL] Usando cache de 30D para filtrar 7D');
+            logger.log('[ITEM_MODAL] Usando cache de 30D para filtrar 7D');
           }
 
           if (sourceData && sourceData.chart && sourceData.chart.length > 0) {
             // Encontrar a última data disponível no dataset
             const lastPoint = sourceData.chart[sourceData.chart.length - 1];
             if (!lastPoint || !lastPoint.date) {
-              console.warn('[ITEM_MODAL] Não foi possível encontrar última data no dataset');
+              logger.warn('[ITEM_MODAL] Não foi possível encontrar última data no dataset');
               setHistory({
                 market_hash_name: item.market_hash_name,
                 chart: [],
@@ -232,7 +231,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               : null;
             
             if (!lastDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(lastDateStr)) {
-              console.warn('[ITEM_MODAL] Última data em formato inválido:', lastPoint.date);
+              logger.warn('[ITEM_MODAL] Última data em formato inválido:', lastPoint.date);
               setHistory({
                 market_hash_name: item.market_hash_name,
                 chart: [],
@@ -249,11 +248,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             sevenDaysBeforeLast.setUTCHours(0, 0, 0, 0);
             const sevenDaysBeforeLastStr = sevenDaysBeforeLast.toISOString().split('T')[0];
 
-            console.log('[ITEM_MODAL] Última data disponível:', lastDateStr);
-            console.log('[ITEM_MODAL] Filtrando dados de', sevenDaysBeforeLastStr, 'até', lastDateStr);
-            console.log('[ITEM_MODAL] Total de pontos no source:', sourceData.chart.length);
-            console.log('[ITEM_MODAL] Primeiros 3 pontos:', sourceData.chart.slice(0, 3).map(p => ({ date: p.date, price: p.price })));
-            console.log('[ITEM_MODAL] Últimos 3 pontos:', sourceData.chart.slice(-3).map(p => ({ date: p.date, price: p.price })));
+            logger.log('[ITEM_MODAL] Última data disponível:', lastDateStr);
+            logger.log('[ITEM_MODAL] Filtrando dados de', sevenDaysBeforeLastStr, 'até', lastDateStr);
+            logger.log('[ITEM_MODAL] Total de pontos no source:', sourceData.chart.length);
+            logger.log('[ITEM_MODAL] Primeiros 3 pontos:', sourceData.chart.slice(0, 3).map(p => ({ date: p.date, price: p.price })));
+            logger.log('[ITEM_MODAL] Últimos 3 pontos:', sourceData.chart.slice(-3).map(p => ({ date: p.date, price: p.price })));
 
             // Filtrar últimos 7 dias a partir da última data disponível
             // A API retorna datas no formato "YYYY-MM-DD", então podemos comparar strings diretamente
@@ -277,23 +276,23 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               return isWithin7Days;
             });
 
-            console.log('[ITEM_MODAL] Pontos filtrados para 7D:', filtered7Days.length);
+            logger.log('[ITEM_MODAL] Pontos filtrados para 7D:', filtered7Days.length);
             if (filtered7Days.length > 0) {
-              console.log('[ITEM_MODAL] Exemplo de pontos filtrados:', filtered7Days.slice(0, 3).map(p => ({ date: p.date, price: p.price })));
+              logger.log('[ITEM_MODAL] Exemplo de pontos filtrados:', filtered7Days.slice(0, 3).map(p => ({ date: p.date, price: p.price })));
             } else {
-              console.warn('[ITEM_MODAL] Nenhum ponto passou no filtro. Verificando datas...');
+              logger.warn('[ITEM_MODAL] Nenhum ponto passou no filtro. Verificando datas...');
               if (sourceData.chart.length > 0) {
                 const firstDate = sourceData.chart[0]?.date;
                 const lastDate = sourceData.chart[sourceData.chart.length - 1]?.date;
-                console.warn('[ITEM_MODAL] Primeira data no dataset:', firstDate);
-                console.warn('[ITEM_MODAL] Última data no dataset:', lastDate);
+                logger.warn('[ITEM_MODAL] Primeira data no dataset:', firstDate);
+                logger.warn('[ITEM_MODAL] Última data no dataset:', lastDate);
                 const lastDateStr = sourceData.chart.length > 0 
                   ? (typeof sourceData.chart[sourceData.chart.length - 1]?.date === 'string' 
                       ? sourceData.chart[sourceData.chart.length - 1].date.trim().split('T')[0] 
                       : null)
                   : null;
-                console.warn('[ITEM_MODAL] Data de corte (7 dias atrás da última data):', sevenDaysBeforeLastStr);
-                console.warn('[ITEM_MODAL] Comparação:', { lastDate: lastDateStr, sevenDaysBeforeLastStr, isAfter: lastDateStr && lastDateStr >= sevenDaysBeforeLastStr });
+                logger.warn('[ITEM_MODAL] Data de corte (7 dias atrás da última data):', sevenDaysBeforeLastStr);
+                logger.warn('[ITEM_MODAL] Comparação:', { lastDate: lastDateStr, sevenDaysBeforeLastStr, isAfter: lastDateStr && lastDateStr >= sevenDaysBeforeLastStr });
               }
             }
 
@@ -316,12 +315,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   analysis: sourceData.analysis || null,
                 });
                 
-                console.log('[ITEM_MODAL] Dados de 7D processados:', {
+                logger.log('[ITEM_MODAL] Dados de 7D processados:', {
                   chart_points: filtered7Days.length,
                   summary: calculatedSummary,
                 });
               } else {
-                console.warn('[ITEM_MODAL] Nenhum preço válido após filtrar 7D');
+                logger.warn('[ITEM_MODAL] Nenhum preço válido após filtrar 7D');
                 setHistory({
                   market_hash_name: item.market_hash_name,
                   chart: [],
@@ -330,7 +329,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 });
               }
             } else {
-              console.warn('[ITEM_MODAL] Nenhum ponto encontrado nos últimos 7 dias');
+              logger.warn('[ITEM_MODAL] Nenhum ponto encontrado nos últimos 7 dias');
               setHistory({
                 market_hash_name: item.market_hash_name,
                 chart: [],
@@ -339,7 +338,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               });
             }
           } else {
-            console.warn('[ITEM_MODAL] Não foi possível obter dados de 30D para filtrar 7D');
+            logger.warn('[ITEM_MODAL] Não foi possível obter dados de 30D para filtrar 7D');
             setHistory({
               market_hash_name: item.market_hash_name,
               chart: [],
@@ -349,7 +348,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           }
         } else {
           // Para 30D ou ALL, carregar diretamente
-          const data = await getItemHistory(item.market_hash_name, selectedDays, token);
+          const data = getItemHistory(item.market_hash_name, selectedDays);
 
           if (cancelled) return;
 
@@ -359,7 +358,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             
             // Verificar se o summary está completo (deve ter min_price, max_price, avg_price)
             if (!finalSummary || finalSummary.min_price === undefined || finalSummary.max_price === undefined || finalSummary.avg_price === undefined) {
-              console.log('[ITEM_MODAL] Summary incompleto do backend, calculando localmente...', finalSummary);
+              logger.log('[ITEM_MODAL] Summary incompleto do backend, calculando localmente...', finalSummary);
               finalSummary = calculateSummary(data.chart);
             } else {
               // Garantir que os valores são números (não strings)
@@ -372,7 +371,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 price_change: typeof finalSummary.price_change === 'string' ? parseFloat(finalSummary.price_change) : (finalSummary.price_change || 0),
                 price_change_percent: typeof finalSummary.price_change_percent === 'string' ? parseFloat(finalSummary.price_change_percent) : (finalSummary.price_change_percent || 0),
               };
-              console.log('[ITEM_MODAL] Summary recebido do backend (normalizado):', finalSummary);
+              logger.log('[ITEM_MODAL] Summary recebido do backend (normalizado):', finalSummary);
             }
             
             const historyData = {
@@ -395,7 +394,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         }
       } catch (error) {
         if (cancelled) return;
-        console.error('[ITEM_MODAL] Erro ao carregar histórico:', error);
+        logger.error('[ITEM_MODAL] Erro ao carregar histórico:', error);
         setHistoryError('Error loading price history');
         setHistory(null);
       } finally {
@@ -410,7 +409,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [visible, item?.market_hash_name, selectedDays, token]);
+  }, [visible, item?.market_hash_name, selectedDays]);
 
   const chartData = useMemo(() => {
     if (!history || !history.chart || !Array.isArray(history.chart) || history.chart.length === 0) {
@@ -476,7 +475,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         ],
       };
     } catch (error) {
-      console.error('[ITEM_MODAL] Erro ao processar dados do gráfico:', error);
+      logger.error('[ITEM_MODAL] Erro ao processar dados do gráfico:', error);
       return {
         labels: [],
         datasets: [{ data: [] }],

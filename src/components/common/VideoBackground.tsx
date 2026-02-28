@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
+import { logger } from '@utils/logger';
 
 /**
  * VideoBackground component
@@ -59,7 +60,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   try {
     Video = require('react-native-video').default;
   } catch (e) {
-    console.warn('[VideoBackground] react-native-video not available:', e);
+    logger.warn('[VideoBackground] react-native-video not available:', e);
     return null;
   }
 
@@ -77,7 +78,7 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
     }
   }
 
-  console.log('[VideoBackground] Renderizando vídeo background', { SCREEN_WIDTH, SCREEN_HEIGHT, retryKey });
+  logger.log('[VideoBackground] Renderizando vídeo background', { SCREEN_WIDTH, SCREEN_HEIGHT, retryKey });
   
   return (
     <View 
@@ -106,14 +107,14 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
         playWhenInactive={true} // Continuar quando tela está inativa
         ignoreSilentSwitch="ignore" // Ignorar switch de silêncio
         onLoad={() => {
-          console.log('[VideoBackground] Vídeo carregado com sucesso');
+          logger.log('[VideoBackground] Vídeo carregado com sucesso');
         }}
         onEnd={() => {
           // Garantir loop mesmo que repeat falhe
-          console.log('[VideoBackground] Vídeo chegou ao fim, reiniciando...');
+          logger.log('[VideoBackground] Vídeo chegou ao fim, reiniciando...');
         }}
         onError={(error: any) => {
-          console.error('[VideoBackground] Erro ao carregar vídeo:', {
+          logger.error('[VideoBackground] Erro ao carregar vídeo:', {
             error: error?.error || error,
             errorString: error?.error?.errorString,
             errorCode: error?.error?.errorCode,
@@ -127,16 +128,16 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
               clearTimeout(retryTimeoutRef.current);
             }
             retryTimeoutRef.current = setTimeout(() => {
-              console.log(`[VideoBackground] Tentando recarregar vídeo (tentativa ${retryKey + 1}/3)...`);
+              logger.log(`[VideoBackground] Tentando recarregar vídeo (tentativa ${retryKey + 1}/3)...`);
               setRetryKey((prev) => prev + 1);
             }, 2000);
           } else {
-            console.warn('[VideoBackground] Máximo de tentativas alcançado. Vídeo não será exibido.');
+            logger.warn('[VideoBackground] Máximo de tentativas alcançado. Vídeo não será exibido.');
           }
         }}
         onBuffer={(data: any) => {
           if (data?.isBuffering) {
-            console.log('[VideoBackground] Bufferizando vídeo...');
+            logger.log('[VideoBackground] Bufferizando vídeo...');
           }
         }}
       />

@@ -42,7 +42,7 @@ Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage
 - **Snapshot simulations** — Run and compare portfolio scenarios
 - **Profile management** — Update settings and preferences
 
-**Backend:** `https://skinfolio-backend-v2.onrender.com`
+**Architecture:** 100% Local-First — all data stored on-device via SQLite + MMKV.
 
 ---
 

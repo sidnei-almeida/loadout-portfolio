@@ -1,7 +1,26 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+/**
+ * Local-First AuthContext.
+ *
+ * Authentication state is derived entirely from MMKV:
+ *  - `steamId` exists → user has logged in at least once
+ *  - `hasSession` is true → cookies are (believed to be) valid
+ *
+ * No JWT, no /users/me, no backend dependency.
+ */
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
 import { storage } from '@services/storage';
-import { apiClient } from '@services/api';
-import type { User } from '@types/user';
+
+// ---------------------------------------------------------------------------
+// Sync-step UI (kept for the post-login sync overlay)
+// ---------------------------------------------------------------------------
 
 export interface SyncStep {
   id: string;
@@ -9,15 +28,27 @@ export interface SyncStep {
   status: 'pending' | 'processing' | 'completed';
 }
 
+const DEFAULT_SYNC_STEPS: SyncStep[] = [
+  { id: 'sync', label: 'Syncing inventory with Steam', status: 'pending' },
+  { id: 'prices', label: 'Updating price history', status: 'pending' },
+  { id: 'load', label: 'Loading updated data', status: 'pending' },
+];
+
+// ---------------------------------------------------------------------------
+// Context type
+// ---------------------------------------------------------------------------
+
 interface AuthContextType {
-  token: string | null;
-  user: User | null;
-  login: (token: string) => Promise<void>;
-  logout: () => Promise<void>;
+  steamId: string | null;
+  isAuthenticated: boolean;
   isLoading: boolean;
+
+  login: (steamId: string) => void;
+  logout: () => void;
+
   sessionExpired: boolean;
   clearSessionExpired: () => void;
-  // Estados para sincronização após login
+
   isPostLoginSyncing: boolean;
   postLoginSyncSteps: SyncStep[];
   updatePostLoginSyncStep: (stepId: string, status: SyncStep['status']) => void;
@@ -27,120 +58,86 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [steamId, setSteamId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const [isPostLoginSyncing, setIsPostLoginSyncing] = useState(false);
-  const [postLoginSyncSteps, setPostLoginSyncSteps] = useState<SyncStep[]>([
-    { id: 'sync', label: 'Syncing inventory with Steam', status: 'pending' },
-    { id: 'prices', label: 'Updating price history', status: 'pending' },
-    { id: 'load', label: 'Loading updated data', status: 'pending' },
-  ]);
-  const previousTokenRef = useRef<string | null>(null);
 
-  const loadUserData = useCallback(async (authToken: string) => {
-    try {
-      const userData = await apiClient.get<User>('/users/me', authToken);
-      // Converter steam_id para string
-      if (userData.steam_id) {
-        userData.steam_id = String(userData.steam_id);
-      }
-      setUser(userData);
-      await storage.setUser(userData);
-      // Limpar flag de sessão expirada se login bem-sucedido
-      setSessionExpired(false);
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-        // Marcar que a sessão expirou antes de limpar
-        // Só marcar se havia um token anterior (não no primeiro load)
-        if (previousTokenRef.current) {
-          setSessionExpired(true);
-        }
-        setToken(null);
-        setUser(null);
-        await storage.clear();
-      }
+  const [isPostLoginSyncing, setIsPostLoginSyncing] = useState(false);
+  const [postLoginSyncSteps, setPostLoginSyncSteps] = useState<SyncStep[]>(DEFAULT_SYNC_STEPS);
+
+  // Hydrate from MMKV on mount
+  useEffect(() => {
+    const storedId = storage.getSteamId();
+    if (storedId && storage.getHasSession()) {
+      setSteamId(storedId);
     }
+    setIsLoading(false);
   }, []);
 
-  const loadStoredToken = useCallback(async () => {
-    try {
-      const storedToken = await storage.getToken();
-      if (storedToken) {
-        previousTokenRef.current = storedToken;
-        setToken(storedToken);
-        await loadUserData(storedToken);
-      }
-    } catch (error) {
-      console.error('Error loading token:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadUserData]);
+  const login = useCallback((id: string) => {
+    storage.setSteamId(id);
+    storage.setHasSession(true);
+    setSteamId(id);
+    setSessionExpired(false);
+  }, []);
 
-  useEffect(() => {
-    loadStoredToken();
-  }, [loadStoredToken]);
-
-  const login = async (newToken: string) => {
-    previousTokenRef.current = newToken;
-    setToken(newToken);
-    await storage.setToken(newToken);
-    await loadUserData(newToken);
-  };
-
-  const logout = async () => {
-    previousTokenRef.current = null;
-    setToken(null);
-    setUser(null);
-    setSessionExpired(false); // Limpar flag ao fazer logout manual
-    await storage.clear();
-  };
+  const logout = useCallback(() => {
+    storage.clear();
+    setSteamId(null);
+    setSessionExpired(false);
+  }, []);
 
   const clearSessionExpired = useCallback(() => {
     setSessionExpired(false);
   }, []);
 
-  const updatePostLoginSyncStep = useCallback((stepId: string, status: SyncStep['status']) => {
-    setPostLoginSyncSteps(prev => prev.map(step =>
-      step.id === stepId ? { ...step, status } : step
-    ));
-  }, []);
+  const updatePostLoginSyncStep = useCallback(
+    (stepId: string, status: SyncStep['status']) => {
+      setPostLoginSyncSteps(prev =>
+        prev.map(s => (s.id === stepId ? { ...s, status } : s)),
+      );
+    },
+    [],
+  );
 
-  const setPostLoginSyncing = useCallback((syncing: boolean) => {
+  const setPostLoginSyncingCb = useCallback((syncing: boolean) => {
     setIsPostLoginSyncing(syncing);
   }, []);
 
   const resetPostLoginSyncSteps = useCallback(() => {
-    setPostLoginSyncSteps([
-      { id: 'sync', label: 'Syncing inventory with Steam', status: 'pending' },
-      { id: 'prices', label: 'Updating price history', status: 'pending' },
-      { id: 'load', label: 'Loading updated data', status: 'pending' },
-    ]);
+    setPostLoginSyncSteps(DEFAULT_SYNC_STEPS.map(s => ({ ...s })));
   }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      token, 
-      user, 
-      login, 
-      logout, 
-      isLoading, 
-      sessionExpired,
-      clearSessionExpired,
-      isPostLoginSyncing,
-      postLoginSyncSteps,
-      updatePostLoginSyncStep,
-      setPostLoginSyncing,
-      resetPostLoginSyncSteps,
-    }}>
+    <AuthContext.Provider
+      value={{
+        steamId,
+        isAuthenticated: !!steamId,
+        isLoading,
+        login,
+        logout,
+        sessionExpired,
+        clearSessionExpired,
+        isPostLoginSyncing,
+        postLoginSyncSteps,
+        updatePostLoginSyncStep,
+        setPostLoginSyncing: setPostLoginSyncingCb,
+        resetPostLoginSyncSteps,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -149,4 +146,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

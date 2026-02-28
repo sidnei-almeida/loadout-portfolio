@@ -3,4 +3,5 @@ export * from './portfolio';
 export * from './item';
 export * from './snapshot';
 export * from './navigation';
+export * from './prices';
 

@@ -1,38 +1,48 @@
 /**
- * Hook para buscar histórico do portfolio
+ * Hook for the portfolio value chart on the Dashboard.
+ *
+ * In the Local-First model, the "history" is derived from saved
+ * snapshots rather than a backend time-series.  Each snapshot
+ * represents a frozen-in-time total_value data-point.
+ *
+ * If fewer than 2 snapshots exist we return an empty array and
+ * the chart component hides itself gracefully.
  */
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
-import { getPortfolioHistory } from '@services/portfolio';
-import type { PortfolioHistoryResponse } from '@services/portfolio';
+import { getSnapshots } from '../database/repositories/snapshotRepo';
+import type { PortfolioHistory } from '@types/portfolio';
+import { SNAPSHOTS_KEY } from './useSnapshots';
 
-export const usePortfolioHistory = (days: number = 30) => {
-  const { token, user } = useAuth();
+export const usePortfolioHistory = (_days: number = 30) => {
+  const { isAuthenticated } = useAuth();
 
   const {
     data: historyData,
     isLoading,
     error,
     refetch,
-  } = useQuery<PortfolioHistoryResponse>({
-    queryKey: ['portfolio-history', user?.steam_id, days],
+  } = useQuery<PortfolioHistory[]>({
+    queryKey: [...SNAPSHOTS_KEY, 'history'],
     queryFn: () => {
-      if (!user?.steam_id || !token) {
-        throw new Error('User or token not available');
-      }
-      return getPortfolioHistory(user.steam_id, days, token);
+      const snapshots = getSnapshots();
+
+      return snapshots
+        .map(s => ({
+          date: s.snapshot_date,
+          total_value: s.total_value,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
     },
-    enabled: !!user?.steam_id && !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    enabled: isAuthenticated,
+    staleTime: 60_000,
   });
 
   return {
-    history: historyData?.history || [],
+    history: historyData ?? [],
     isLoading,
     error,
     refetch,
   };
 };
-

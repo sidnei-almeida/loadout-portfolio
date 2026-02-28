@@ -10,7 +10,7 @@ import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
 import { PackageIcon, MoneyIcon, DiamondIcon, ArrowUpIcon, ArrowDownIcon, CheckIcon, ImagePlaceholderIcon } from '@components/common';
-import type { SnapshotComparison } from '@services/snapshots';
+import type { SnapshotComparison } from '@types/snapshot';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {
