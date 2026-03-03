@@ -7,7 +7,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useProfileCard } from '@hooks/useProfileCard';
 import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import { spacing, typography } from '@theme';
-import { LegalDisclaimer } from '@components/common/LegalDisclaimer';
+import { LegalFooter } from '@components/common/LegalFooter';
 
 export const ProfileScreen: React.FC = () => {
   const { logout } = useAuth();
@@ -77,8 +77,8 @@ export const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.disclaimerContainer}>
-          <LegalDisclaimer showPrivacyLink />
+        <View style={styles.footerContainer}>
+          <LegalFooter />
         </View>
       </View>
       <AlertDialog />
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
   actions: { marginTop: spacing.lg, gap: spacing.md },
-  disclaimerContainer: { marginTop: spacing.xl, paddingBottom: spacing.md, alignItems: 'center' },
+  footerContainer: { marginTop: spacing.xl, paddingBottom: spacing.md, alignItems: 'center' },
   logoutButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,

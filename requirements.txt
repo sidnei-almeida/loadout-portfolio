@@ -1,0 +1,18 @@
+# Core
+torch
+torchvision
+torchaudio
+
+# Intel Acceleration
+intel-extension-for-pytorch
+optimum[intel]
+
+# Fine-Tuning
+transformers
+datasets
+peft
+accelerate
+
+# Experiment Tracking
+wandb
+tqdm

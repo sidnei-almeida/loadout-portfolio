@@ -143,6 +143,32 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
   };
 
   const finishLogin = async (steamId: string) => {
+    // Capture cookies NOW while the WebView is still alive.
+    // On Android, CookieManager.get() may fail after WebView unmounts.
+    try {
+      const cookies = await CookieManager.get('https://steamcommunity.com', true);
+      const sessionId =
+        (cookies as any)?.sessionid?.value ?? (cookies as any)?.sessionid ?? '';
+      const steamLoginSecure =
+        (cookies as any)?.steamLoginSecure?.value ??
+        (cookies as any)?.steamLoginSecure ??
+        '';
+
+      if (sessionId && steamLoginSecure) {
+        storage.setSteamCookies(sessionId, steamLoginSecure);
+        logger.log('[AUTH] Cookies saved to MMKV before WebView close');
+      } else {
+        logger.warn('[AUTH] Could not read cookies before close', {
+          hasSessionId: !!sessionId,
+          hasLoginSecure: !!steamLoginSecure,
+        });
+      }
+
+      await CookieManager.flush();
+    } catch (err) {
+      logger.warn('[AUTH] CookieManager.flush failed:', err);
+    }
+
     storage.setSteamId(steamId);
     storage.setHasSession(true);
 

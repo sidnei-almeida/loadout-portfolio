@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { StyleSheet, Alert, View } from 'react-native';
+import { StyleSheet, Alert, View, Text, TouchableOpacity } from 'react-native';
 import { Screen } from '@components/common/Screen';
 import { Loading } from '@components/common/Loading';
 import { RefreshProgressModal } from '@components/common/RefreshProgressModal';
@@ -9,7 +9,13 @@ import { usePortfolio } from '@hooks/usePortfolio';
 import { usePortfolioHistory } from '@hooks/usePortfolioHistory';
 import { useAuth } from '@hooks/useAuth';
 import { storage } from '@services/storage';
-import { spacing } from '@theme';
+import { spacing, typography } from '@theme';
+import { logger } from '@utils/logger';
+import { syncInventory } from '@services/sync/inventorySync';
+import { syncPrices } from '@services/sync/priceSync';
+import { getCatalog } from '../database/repositories/catalogRepo';
+import { getItemCount, getInventory, getTotalValue } from '../database/repositories/inventoryRepo';
+import { createSnapshot, type SnapshotItemInput } from '../database/repositories/snapshotRepo';
 import type { Item } from '@types/item';
 
 const safeSpacing = spacing || { md: 16, xl: 20, xxl: 28 };
@@ -75,33 +81,79 @@ export const DashboardScreen: React.FC = () => {
   const handleRefresh = async () => {
     if (!steamId || isRefreshing) { return; }
 
-    if (storage.isOnCooldown('inventory_sync')) {
-      const remaining = Math.ceil(storage.getCooldownRemaining('inventory_sync') / 1000);
-      Alert.alert('Cooldown', `Please wait ${remaining}s before refreshing again.`);
-      return;
-    }
-
     setIsRefreshing(true);
     resetSteps();
 
     try {
-      // TODO: Wire to Steam sync service (Passo 5)
+      // Step 1: Sync inventory from Steam
       updateStep('sync', 'processing');
-      await new Promise(r => setTimeout(r, 500));
+      try {
+        await syncInventory(steamId);
+      } catch (err: any) {
+        if (err?.message?.startsWith('COOLDOWN:')) {
+          Alert.alert('Cooldown', err.message.replace('COOLDOWN:', ''));
+          setIsRefreshing(false);
+          resetSteps();
+          return;
+        }
+        logger.warn('[Dashboard] Inventory sync failed:', err?.message);
+      }
       updateStep('sync', 'completed');
 
+      // Step 2: Sync prices for cataloged skins
       updateStep('prices', 'processing');
-      await new Promise(r => setTimeout(r, 500));
+      try {
+        const catalog = getCatalog();
+        const names = catalog.map(s => s.market_hash_name);
+        if (names.length > 0) {
+          await syncPrices(names);
+        }
+      } catch (err: any) {
+        if (!err?.message?.startsWith('COOLDOWN:')) {
+          logger.warn('[Dashboard] Price sync failed:', err?.message);
+        }
+      }
       updateStep('prices', 'completed');
 
+      // Step 3: Reload local data + auto-snapshot
       updateStep('load', 'processing');
+
+      const count = getItemCount();
+      if (count > 0) {
+        try {
+          const inv = getInventory();
+          const totalVal = getTotalValue();
+          const snapshotItems: SnapshotItemInput[] = inv.map(row => ({
+            market_hash_name: row.market_hash_name,
+            original_price: row.current_price,
+            quantity: row.quantity,
+          }));
+          const today = new Date().toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+          });
+          createSnapshot(
+            {
+              description: `Automatic - ${today}`,
+              icon: 'refresh',
+              total_value: totalVal,
+              total_invested: totalVal,
+              item_count: count,
+            },
+            snapshotItems,
+          );
+          logger.log(`[Dashboard] Auto-snapshot: ${count} items, $${totalVal.toFixed(2)}`);
+        } catch (err: any) {
+          logger.warn('[Dashboard] Auto-snapshot failed:', err?.message);
+        }
+      }
+
       invalidate();
       await refetch();
       await refetchHistory();
       updateStep('load', 'completed');
 
-      storage.setCooldown('inventory_sync');
     } catch (error) {
+      logger.error('[Dashboard] Refresh failed:', error);
       setIsRefreshing(false);
       resetSteps();
       Alert.alert('Error', 'Could not update data. Please try again.');
@@ -128,6 +180,36 @@ export const DashboardScreen: React.FC = () => {
 
   const currentStepIndex = refreshSteps.findIndex(step => step.status === 'processing');
   const currentStep = currentStepIndex >= 0 ? currentStepIndex : refreshSteps.length - 1;
+
+  if (!isLoading && items.length === 0 && !isRefreshing) {
+    return (
+      <View style={styles.screenContainer}>
+        <Screen style={styles.scrollContent} showPremiumBackground={false}>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>NO INVENTORY DATA</Text>
+            <Text style={styles.emptySubtitle}>
+              Your inventory hasn't been synced yet, or the sync failed.
+              Tap below to fetch your CS2 inventory from Steam.
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyButton}
+              onPress={handleRefresh}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.emptyButtonText}>SYNC NOW</Text>
+            </TouchableOpacity>
+          </View>
+        </Screen>
+
+        <RefreshProgressModal
+          visible={isRefreshing}
+          currentStep={currentStep}
+          steps={refreshSteps}
+          onComplete={handleRefreshComplete}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screenContainer}>
@@ -169,6 +251,12 @@ export const DashboardScreen: React.FC = () => {
   );
 };
 
+const safeTypography = typography || {
+  fonts: { secondaryBold: 'Rajdhani-Bold', secondaryRegular: 'Rajdhani-Regular' },
+  weights: { bold: '700' },
+  sizes: { md: 15, sm: 13 },
+};
+
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
@@ -180,5 +268,49 @@ const styles = StyleSheet.create({
     paddingTop: safeSpacing.xl,
     paddingBottom: safeSpacing.xxl * 2,
     zIndex: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: safeSpacing.xl,
+    paddingTop: 120,
+    gap: safeSpacing.md,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontFamily: safeTypography.fonts.secondaryBold,
+    fontWeight: safeTypography.weights.bold,
+    color: '#D4C291',
+    letterSpacing: 2,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: safeTypography.sizes.sm,
+    fontFamily: safeTypography.fonts.secondaryRegular,
+    color: 'rgba(255, 255, 255, 0.5)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: safeSpacing.md,
+  },
+  emptyButton: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#D4C291',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  emptyButtonText: {
+    fontSize: safeTypography.sizes.md,
+    fontFamily: safeTypography.fonts.secondaryBold,
+    fontWeight: safeTypography.weights.bold,
+    color: '#FFFFFF',
+    letterSpacing: 1,
   },
 });

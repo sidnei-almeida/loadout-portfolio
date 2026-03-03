@@ -16,7 +16,9 @@ import React, {
   useCallback,
   type ReactNode,
 } from 'react';
+import CookieManager from '@react-native-cookies/cookies';
 import { storage } from '@services/storage';
+import { logger } from '@utils/logger';
 
 // ---------------------------------------------------------------------------
 // Sync-step UI (kept for the post-login sync overlay)
@@ -88,8 +90,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = useCallback(() => {
     storage.clear();
+    CookieManager.clearAll(true).catch(() => {});
     setSteamId(null);
     setSessionExpired(false);
+    logger.log('[AUTH] Logged out — MMKV + WebView cookies cleared');
   }, []);
 
   const clearSessionExpired = useCallback(() => {

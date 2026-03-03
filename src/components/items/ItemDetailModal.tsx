@@ -4,14 +4,14 @@ import {
   Text,
   StyleSheet,
   Modal,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
   StatusBar,
   Platform,
 } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { ScrollView } from 'react-native-gesture-handler';
+import { InteractiveChart, ChartPoint } from '@components/common/InteractiveChart';
 import FastImage from 'react-native-fast-image';
 import Svg, { Polygon, Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { colors, spacing, typography } from '@theme';
@@ -411,75 +411,23 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     };
   }, [visible, item?.market_hash_name, selectedDays]);
 
-  const chartData = useMemo(() => {
+  const chartPoints: ChartPoint[] = useMemo(() => {
     if (!history || !history.chart || !Array.isArray(history.chart) || history.chart.length === 0) {
-      return {
-        labels: [],
-        datasets: [{ data: [] }],
-      };
+      return [];
     }
-
     try {
-      const maxPoints = 30;
-      let finalData = history.chart;
-
-      if (history.chart.length > maxPoints) {
-        const step = Math.max(1, Math.floor(history.chart.length / maxPoints));
-        const filtered = history.chart.filter((_, index) => index % step === 0);
-        finalData = filtered.length > maxPoints ? filtered.slice(-maxPoints) : filtered;
-      }
-
-      const processedData: Array<{ label: string; value: number }> = finalData.map((point, index) => {
-        let label = '';
-        if (index === 0 || index === finalData.length - 1) {
-          try {
-            if (point && point.date) {
-              const date = new Date(point.date);
-              if (!isNaN(date.getTime())) {
-                label = `${date.getDate()}/${date.getMonth() + 1}`;
-              }
-            }
-          } catch {
-            label = '';
-          }
-        }
-
-        let value = 0;
-        if (point && point.price !== null && point.price !== undefined) {
-          const price = typeof point.price === 'number' ? point.price : Number(point.price);
-          value = isNaN(price) || price < 0 ? 0 : price;
-        }
-
-        return { label, value };
-      });
-
-      const labels = processedData.map((item) => item.label);
-      const data = processedData.map((item) => item.value);
-
-      const validData = data.filter((val) => val > 0);
-      if (validData.length === 0) {
-        return {
-          labels: [],
-          datasets: [{ data: [] }],
-        };
-      }
-
-      return {
-        labels,
-        datasets: [
-          {
-            data,
-            color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`,
-            strokeWidth: 2,
-          },
-        ],
-      };
+      return history.chart
+        .map((point) => {
+          if (!point) return null;
+          const price =
+            typeof point.price === 'number' ? point.price : Number(point.price);
+          if (isNaN(price) || price <= 0) return null;
+          return { value: price, date: point.date } as ChartPoint;
+        })
+        .filter((p): p is ChartPoint => p !== null);
     } catch (error) {
       logger.error('[ITEM_MODAL] Erro ao processar dados do gráfico:', error);
-      return {
-        labels: [],
-        datasets: [{ data: [] }],
-      };
+      return [];
     }
   }, [history]);
 
@@ -493,12 +441,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const floatPercentage = Math.min(100, Math.max(0, (floatValue / 1.0) * 100));
   const wearCondition = floatValue > 0 ? getWearCondition(floatValue) : null;
 
-  const hasValidChartData = chartData && chartData.datasets && chartData.datasets[0] && chartData.datasets[0].data.length > 0;
-  // Dimensões idênticas ao PortfolioChart do Dashboard
-  const cardHeight = 280; // Altura fixa do card (igual ao Dashboard)
-  const chartHeight = cardHeight; // Altura do gráfico = altura total do card
-  const containerPadding = safeSpacing.md * 2; // Padding do container pai (esquerda + direita)
-  const chartWidth = screenWidth - containerPadding; // Largura = tela - padding lateral
+  const hasValidChartData = chartPoints.length > 0;
+  const cardHeight = 280;
+  const containerPadding = safeSpacing.md * 2;
+  const chartWidth = screenWidth - containerPadding;
 
   const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
 
@@ -745,48 +691,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   <Text style={styles.emptyText}>No history available</Text>
                 </View>
               ) : (
-                <LineChart
-                  data={chartData}
+                <InteractiveChart
+                  data={chartPoints}
                   width={chartWidth}
-                  height={chartHeight}
-                  chartConfig={{
-                    backgroundColor: 'transparent',
-                    backgroundGradientFrom: 'transparent',
-                    backgroundGradientTo: 'transparent',
-                    decimalPlaces: 0,
-                    // Linha Tactical Gold: Ouro tático CS2
-                    color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`, // Tactical Gold #d4c291
-                    // Labels com contraste sutil
-                    labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`, // Gray-400
-                    formatYLabel: (value) => {
-                      const num = Number(value);
-                      if (isNaN(num)) return '0';
-                      if (num >= 1000) {
-                        return `${(num / 1000).toFixed(1)}k`;
-                      }
-                      return num.toFixed(0);
-                    },
-                    // Pontos completamente invisíveis
-                    propsForDots: {
-                      r: '0', // Radius 0 = invisível
-                      strokeWidth: '0',
-                      stroke: 'transparent',
-                    },
-                    // Grid lines sutis e escuros (quase invisíveis)
-                    propsForBackgroundLines: {
-                      strokeDasharray: '',
-                      stroke: '#292524', // Muito escuro, quase invisível
-                      strokeWidth: 0.5,
-                    },
-                  }}
-                  bezier
-                  style={styles.chart}
-                  // Configuração Tactical: visual limpo com grid sutil
-                  withInnerLines={true} // Grid horizontal sutil
-                  withOuterLines={false} // Sem linhas externas (bordas)
-                  withVerticalLines={true} // Grid vertical sutil
-                  withHorizontalLines={true} // Grid horizontal sutil
-                  withDots={false} // Sem pontos visíveis
+                  height={cardHeight}
                 />
               )}
             </View>
@@ -1339,27 +1247,20 @@ const styles = StyleSheet.create({
     fontWeight: safeTypography.weights.semiBold,
   },
   chartCard: {
-    // O gráfico É o card - estilo aplicado diretamente aqui, sem wrapper adicional
-    // Estilo idêntico ao PortfolioChart do Dashboard
-    backgroundColor: '#1c1b19', // Tactical dark background
+    backgroundColor: '#1c1b19',
     borderWidth: 1,
-    borderColor: 'rgba(212, 194, 145, 0.3)', // Tactical Gold 30% opacity
-    borderRadius: 16, // rounded-2xl
-    padding: 0, // Sem padding - gráfico ocupa 100% do espaço
+    borderColor: 'rgba(212, 194, 145, 0.12)',
+    borderRadius: 16,
+    padding: 0,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    // Efeito de profundidade sutil
+    overflow: 'hidden',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
-  },
-  chart: {
-    marginVertical: 0,
-    marginHorizontal: 0, // Sem margens horizontais
-    borderRadius: 12, // Bordas arredondadas para combinar com o container
   },
   loadingContainer: {
     alignItems: 'center',

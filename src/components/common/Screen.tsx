@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, ScrollView } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PremiumBackground } from './PremiumBackground';
 

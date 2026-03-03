@@ -23,6 +23,8 @@ export const mmkv = new MMKV({ id: 'loadout-storage' });
 const Keys = {
   STEAM_ID: 'auth.steam_id',
   HAS_SESSION: 'auth.has_session',
+  STEAM_SESSION_ID: 'auth.steam_session_id',
+  STEAM_LOGIN_SECURE: 'auth.steam_login_secure',
   PROFILE_CARD: 'cache.profile_card',
   STEAM_API_KEY: 'config.steam_api_key',
   CURRENCY: 'prefs.currency',
@@ -50,6 +52,22 @@ export const storage = {
 
   getHasSession(): boolean {
     return mmkv.getBoolean(Keys.HAS_SESSION) ?? false;
+  },
+
+  // ---- Steam session cookies (captured while WebView is alive) ----
+
+  setSteamCookies(sessionId: string, steamLoginSecure: string): void {
+    mmkv.set(Keys.STEAM_SESSION_ID, sessionId);
+    mmkv.set(Keys.STEAM_LOGIN_SECURE, steamLoginSecure);
+  },
+
+  getSteamCookies(): { sessionId: string; steamLoginSecure: string } | null {
+    const sessionId = mmkv.getString(Keys.STEAM_SESSION_ID);
+    const steamLoginSecure = mmkv.getString(Keys.STEAM_LOGIN_SECURE);
+    if (!sessionId || !steamLoginSecure) {
+      return null;
+    }
+    return { sessionId, steamLoginSecure };
   },
 
   // ---- Cached profile card (JSON blob) ----
