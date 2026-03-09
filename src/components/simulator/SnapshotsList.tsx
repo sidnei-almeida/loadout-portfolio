@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { DeleteIcon, PackageIcon, InventoryIcon } from '@components/common';
@@ -38,6 +39,7 @@ export const SnapshotsList: React.FC<SnapshotsListProps> = ({
   firstSnapshotId = null,
   selectedSnapshotId = null,
 }) => {
+  const { t } = useLanguage();
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     // Formato: "14 de dez. de 2023"
@@ -128,7 +130,7 @@ export const SnapshotsList: React.FC<SnapshotsListProps> = ({
             <View style={styles.itemCountRow}>
               <InventoryIcon size={14} color="#9CA3AF" strokeWidth={2} />
               <Text style={styles.snapshotItemCount}>
-                {item.item_count} {item.item_count === 1 ? 'item' : 'items'}
+                {item.item_count} {item.item_count === 1 ? t('item') : t('items')}
               </Text>
             </View>
           </View>
@@ -149,7 +151,7 @@ export const SnapshotsList: React.FC<SnapshotsListProps> = ({
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#d4c291" />
-        <Text style={styles.loadingText}>Loading snapshots...</Text>
+        <Text style={styles.loadingText}>{t('loadingSnapshots')}</Text>
       </View>
     );
   }
@@ -158,10 +160,8 @@ export const SnapshotsList: React.FC<SnapshotsListProps> = ({
     return (
       <View style={styles.emptyContainer}>
         <PackageIcon size={48} color="#9CA3AF" strokeWidth={2} />
-        <Text style={styles.emptyMessage}>No snapshots available</Text>
-        <Text style={styles.emptySubtitle}>
-          Snapshots will be generated automatically as you use the app.
-        </Text>
+        <Text style={styles.emptyMessage}>{t('noSnapshotsAvailable')}</Text>
+        <Text style={styles.emptySubtitle}>{t('snapshotsGeneratedAuto')}</Text>
       </View>
     );
   }

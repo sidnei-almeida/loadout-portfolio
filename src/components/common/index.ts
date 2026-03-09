@@ -11,4 +11,6 @@ export type { SortOption } from './SortSelector';
 export * from './Icons';
 export { ImagePlaceholderIcon } from './ImagePlaceholderIcon';
 export { RefreshProgressModal } from './RefreshProgressModal';
+export { ChartHeader } from './ChartHeader';
+export type { ChartPeriod } from './ChartHeader';
 

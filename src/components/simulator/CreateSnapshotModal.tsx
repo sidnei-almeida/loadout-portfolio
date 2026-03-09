@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { colors, spacing, typography } from '@theme';
 import { useCustomAlert } from '@components/common/CustomAlertDialog';
+import { useLanguage } from '@contexts/LanguageContext';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {
@@ -34,10 +35,11 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showAlert, AlertDialog } = useCustomAlert();
+  const { t } = useLanguage();
 
   const handleSubmit = async () => {
     if (!description.trim()) {
-      showAlert('Error', 'Please enter a title for the snapshot.', 'error');
+      showAlert(t('error'), t('snapshotErrorTitle'), 'error');
       return;
     }
 
@@ -48,8 +50,8 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
       onClose();
     } catch (error) {
       showAlert(
-        'Error',
-        error instanceof Error ? error.message : 'Could not create snapshot. Please try again.',
+        t('error'),
+        error instanceof Error ? error.message : t('snapshotErrorCreate'),
         'error'
       );
     } finally {
@@ -74,23 +76,23 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>New Snapshot</Text>
+            <Text style={styles.title}>{t('newSnapshot')}</Text>
             <TouchableOpacity 
               onPress={handleClose} 
               disabled={isSubmitting} 
               style={styles.closeButton}
               activeOpacity={0.7}
             >
-              <Text style={styles.closeButtonText}>CLOSE</Text>
+              <Text style={styles.closeButtonText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.body}>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Snapshot title</Text>
+              <Text style={styles.label}>{t('snapshotTitle')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Before AWP trade"
+                placeholder={t('snapshotPlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 value={description}
                 onChangeText={setDescription}
@@ -98,7 +100,7 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
                 editable={!isSubmitting}
               />
               <Text style={styles.hint}>
-                Choose a title to identify this snapshot
+                {t('snapshotTitleHint')}
               </Text>
             </View>
 
@@ -108,7 +110,7 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
                 onPress={handleClose}
                 disabled={isSubmitting}
               >
-                <Text style={styles.buttonSecondaryText}>Cancel</Text>
+                <Text style={styles.buttonSecondaryText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonPrimary, isSubmitting && styles.buttonDisabled]}
@@ -118,7 +120,7 @@ export const CreateSnapshotModal: React.FC<CreateSnapshotModalProps> = ({
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color={colors.text} />
                 ) : (
-                  <Text style={styles.buttonPrimaryText}>Create Snapshot</Text>
+                  <Text style={styles.buttonPrimaryText}>{t('createSnapshot')}</Text>
                 )}
               </TouchableOpacity>
             </View>

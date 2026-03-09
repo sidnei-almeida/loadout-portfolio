@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 
 export interface SortOption {
@@ -19,9 +20,10 @@ export const SortSelector: React.FC<SortSelectorProps> = ({
   onChange,
   options,
 }) => {
+  const { t } = useLanguage();
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Sort by</Text>
+      <Text style={styles.label}>{t('sortBy')}</Text>
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={value}

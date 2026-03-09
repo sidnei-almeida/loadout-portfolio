@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@contexts/AuthContext';
+import { LanguageProvider } from '@contexts/LanguageContext';
 import { AppNavigator } from '@navigation/AppNavigator';
 import { queryClient } from '@services/queryClient';
 import { initDatabase } from './src/database';
@@ -27,26 +28,18 @@ function App() {
       });
   }, []);
 
-  if (dbError) {
-    return (
-      <View style={styles.splash}>
-        <Text style={styles.splashTitle}>LOADOUT</Text>
-        <Text style={styles.errorText}>Database error: {dbError}</Text>
-      </View>
-    );
-  }
-
-  if (!dbReady) {
-    return (
-      <View style={styles.splash}>
-        <Text style={styles.splashTitle}>LOADOUT</Text>
-        <ActivityIndicator size="large" color="#d4c291" style={styles.spinner} />
-        <Text style={styles.splashSubtitle}>LOADING ARMORY...</Text>
-      </View>
-    );
-  }
-
-  return (
+  const splashContent = dbError ? (
+    <View style={styles.splash}>
+      <Text style={styles.splashTitle}>LOADOUT</Text>
+      <Text style={styles.errorText}>Database error: {dbError}</Text>
+    </View>
+  ) : !dbReady ? (
+    <View style={styles.splash}>
+      <Text style={styles.splashTitle}>LOADOUT</Text>
+      <ActivityIndicator size="large" color="#d4c291" style={styles.spinner} />
+      <Text style={styles.splashSubtitle}>LOADING ARMORY...</Text>
+    </View>
+  ) : (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
@@ -61,6 +54,12 @@ function App() {
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+
+  return (
+    <LanguageProvider>
+      {splashContent}
+    </LanguageProvider>
   );
 }
 

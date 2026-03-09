@@ -8,6 +8,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SteamIcon } from '@components/common/Icons';
+import { useLanguage } from '@contexts/LanguageContext';
 import { typography, spacing, colors } from '@theme';
 
 interface SteamButtonProps {
@@ -23,8 +24,10 @@ export const SteamButton: React.FC<SteamButtonProps> = ({
   loading = false,
   disabled = false,
   style,
-  title = 'SIGN IN WITH STEAM',
+  title,
 }) => {
+  const { t } = useLanguage();
+  const displayTitle = title ?? t('signInWithSteam');
   return (
     <View style={[styles.container, style]}>
       <TouchableOpacity
@@ -42,7 +45,7 @@ export const SteamButton: React.FC<SteamButtonProps> = ({
           ) : (
             <>
               <SteamIcon size={20} color="#FFFFFF" />
-              <Text style={styles.text}>{title}</Text>
+              <Text style={styles.text}>{displayTitle}</Text>
             </>
           )}
         </View>

@@ -6,6 +6,7 @@ import {
   ScrollView,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
@@ -26,6 +27,7 @@ interface ComparisonResultsProps {
 }
 
 export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison }) => {
+  const { t } = useLanguage();
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
@@ -51,7 +53,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Variation Analysis</Text>
+        <Text style={styles.headerTitle}>{t('variationAnalysis')}</Text>
         <View style={styles.dateRange}>
           <Text style={styles.date}>{formatDate(olderSnapshot.date)}</Text>
           <Text style={styles.dateArrow}>→</Text>
@@ -87,46 +89,44 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
           <Text style={styles.statValue}>
             {olderSnapshot.item_count} → {newerSnapshot.item_count}
           </Text>
-          <Text style={styles.statLabel}>Total Items</Text>
+          <Text style={styles.statLabel}>{t('totalItems')}</Text>
         </View>
         <View style={styles.statItem}>
           <View style={styles.statIconContainer}>
             <MoneyIcon size={24} color="#d4c291" strokeWidth={2} />
           </View>
           <Text style={styles.statValue}>{formatCurrency(olderSnapshot.value)}</Text>
-          <Text style={styles.statLabel}>Initial Value</Text>
+          <Text style={styles.statLabel}>{t('initialValue')}</Text>
         </View>
         <View style={styles.statItem}>
           <View style={styles.statIconContainer}>
             <DiamondIcon size={24} color="#d4c291" strokeWidth={2} />
           </View>
           <Text style={styles.statValue}>{formatCurrency(newerSnapshot.value)}</Text>
-          <Text style={styles.statLabel}>Final Value</Text>
+          <Text style={styles.statLabel}>{t('finalValue')}</Text>
         </View>
       </View>
 
       {/* Changes Details */}
       <View style={styles.changesSection}>
         <View style={styles.changesHeader}>
-          <Text style={styles.changesTitle}>Change Details</Text>
+          <Text style={styles.changesTitle}>{t('changeDetails')}</Text>
           <Text style={styles.changesCount}>
-            {totalChanges} {totalChanges === 1 ? 'change' : 'changes'}
+            {totalChanges} {totalChanges === 1 ? t('change') : t('changes')}
           </Text>
         </View>
 
           {totalChanges === 0 ? (
           <View style={styles.emptyState}>
             <CheckIcon size={32} color="#81C784" strokeWidth={2.5} />
-            <Text style={styles.emptyText}>
-              No changes detected between snapshots
-            </Text>
+            <Text style={styles.emptyText}>{t('noChangesDetected')}</Text>
           </View>
         ) : (
           <View style={styles.diffItemsList}>
             {/* Items Added */}
             {comparison.added_items && comparison.added_items.length > 0 && (
               <View style={styles.portfolioSection}>
-                <Text style={styles.diffSectionTitle}>Items Added</Text>
+                <Text style={styles.diffSectionTitle}>{t('itemsAdded')}</Text>
                 <View style={styles.portfolioList}>
                   {comparison.added_items.map((item, index) => {
                   // Parse do nome do item (similar ao WhatIfSimulator)
@@ -190,7 +190,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
             {/* Items Removed */}
             {comparison.removed_items && comparison.removed_items.length > 0 && (
               <View style={styles.portfolioSection}>
-                <Text style={styles.diffSectionTitle}>Items Removed</Text>
+                <Text style={styles.diffSectionTitle}>{t('itemsRemoved')}</Text>
                 <View style={styles.portfolioList}>
                   {comparison.removed_items.map((item, index) => {
                   // Parse do nome do item (similar ao WhatIfSimulator)
@@ -259,7 +259,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
             {/* Items with quantity changed */}
             {comparison.changed_items && comparison.changed_items.length > 0 && (
               <>
-                <Text style={styles.diffSectionTitle}>Quantity Changed</Text>
+                <Text style={styles.diffSectionTitle}>{t('quantityChanged')}</Text>
                 {comparison.changed_items.map((item, index) => (
                   <View key={index} style={[styles.diffItem, styles.diffItemChanged]}>
                     {/* Imagem */}
@@ -283,7 +283,7 @@ export const ComparisonResults: React.FC<ComparisonResultsProps> = ({ comparison
                       </Text>
                       <View style={styles.diffItemMetaRow}>
                         <View style={[styles.diffBadge, styles.diffBadgeChanged]}>
-                          <Text style={styles.diffBadgeText}>Qty Changed</Text>
+                          <Text style={styles.diffBadgeText}>{t('qtyChanged')}</Text>
                         </View>
                         <Text style={styles.diffItemMeta}>
                           {item.old_quantity} → {item.new_quantity}

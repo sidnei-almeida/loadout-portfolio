@@ -8,8 +8,12 @@ import {
   FlatList,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { LineChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-chart-kit';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
+import { chartKitConfig, chartCardStyle, chartKitChartStyle } from '../../theme/chartTheme';
+import { ChartHeader } from '@components/common/ChartHeader';
+import { InteractiveChart, ChartPoint } from '@components/common/InteractiveChart';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
 import { ImagePlaceholderIcon } from '@components/common/ImagePlaceholderIcon';
@@ -67,10 +71,11 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
   isLoading,
   currentPortfolioValue = 0,
 }) => {
+  const { t } = useLanguage();
   if (!analysis) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Select a snapshot to see the analysis</Text>
+        <Text style={styles.emptyText}>{t('selectSnapshotToSee')}</Text>
       </View>
     );
   }
@@ -93,30 +98,19 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
 
   const screenWidth = Dimensions.get('window').width;
 
-  // Preparar dados do gráfico de evolução
-  let evolutionChartData = { labels: [] as string[], datasets: [{ data: [] as number[] }] };
-  if (analysis.history_chart && Array.isArray(analysis.history_chart) && analysis.history_chart.length > 0) {
-    const history = analysis.history_chart;
-    const labels = history
-      .filter((_, i) => i === 0 || i === history.length - 1 || i % Math.ceil(history.length / 10) === 0)
-      .map((point: any) => {
-        const date = new Date(point.date || point.x);
-        return `${date.getDate()}/${date.getMonth() + 1}`;
-      });
-    
-    const actualData = history.map((point: any) => point.total_value ?? point.y ?? 0);
-
-    evolutionChartData = {
-      labels,
-      datasets: [
-        {
-          data: actualData,
-          color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`, // Tactical Gold
-          strokeWidth: 2,
-        },
-      ],
-    };
-  }
+  // Dados do gráfico de evolução (para InteractiveChart com touch)
+  const evolutionChartPoints: ChartPoint[] = useMemo(() => {
+    if (!analysis.history_chart || !Array.isArray(analysis.history_chart) || analysis.history_chart.length === 0) {
+      return [];
+    }
+    return analysis.history_chart
+      .map((point: any) => ({
+        value: Number(point.total_value ?? point.y ?? 0) || 0,
+        date: point.date ? (typeof point.date === 'string' ? point.date : new Date(point.date).toISOString()?.split('T')[0]) : undefined,
+      }))
+      .filter((p: ChartPoint) => typeof p.value === 'number' && p.value > 0);
+  }, [analysis.history_chart]);
+  const hasEvolutionData = evolutionChartPoints.length >= 2;
 
   // Usar lista de itens do backend (já vem com imagens)
   const portfolioItems = useMemo(() => {
@@ -195,19 +189,19 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       {/* Hero Section: 3 values (Original, Current, Simulated) */}
       <View style={styles.heroCard}>
         <View style={styles.heroSection}>
-          <Text style={styles.heroLabel}>Original</Text>
+          <Text style={styles.heroLabel}>{t('original')}</Text>
           <Text style={styles.heroValue}>{formatCurrency(originalValue)}</Text>
         </View>
         <Text style={styles.heroArrow}>→</Text>
         <View style={styles.heroSection}>
-          <Text style={styles.heroLabel}>Current</Text>
+          <Text style={styles.heroLabel}>{t('current')}</Text>
           <Text style={[styles.heroValue, { color: currentVsOriginalColor }]}>
             {formatCurrency(currentValue)}
           </Text>
         </View>
         <Text style={styles.heroArrow}>→</Text>
         <View style={styles.heroSection}>
-          <Text style={styles.heroLabel}>Simulated</Text>
+          <Text style={styles.heroLabel}>{t('simulated')}</Text>
           <Text style={[styles.heroValue, { color: simulatedVsOriginalColor }]}>
             {formatCurrency(simulatedValue)}
           </Text>
@@ -217,7 +211,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       {/* Cards de Métricas Secundárias (ROI e Liquidez) */}
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>ROI</Text>
+          <Text style={styles.metricLabel}>{t('roi')}</Text>
           <Text style={[styles.metricValue, isPositive ? styles.metricValuePositive : styles.metricValueNegative]}>
             {isPositive ? '+' : ''}{roiPercent.toFixed(2)}%
           </Text>
@@ -227,7 +221,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
         </View>
 
         <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Liquidity</Text>
+          <Text style={styles.metricLabel}>{t('liquidity')}</Text>
           <Text style={styles.metricValue}>{analysis.liquidity_score || 0}</Text>
           <View style={styles.liquidityProgress}>
             <View
@@ -237,62 +231,51 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
               ]}
             />
           </View>
-          <Text style={styles.metricSubtext}>{analysis.liquidity_label || 'N/A'}</Text>
+          <Text style={styles.metricSubtext}>
+            {analysis.liquidity_score != null && analysis.liquidity_score > 0
+              ? t(analysis.liquidity_score >= 80 ? 'liquidityHigh' : analysis.liquidity_score >= 60 ? 'liquidityGood' : analysis.liquidity_score >= 40 ? 'liquidityMedium' : analysis.liquidity_score >= 20 ? 'liquidityLow' : 'liquidityVeryLow')
+              : t('nA')}
+          </Text>
         </View>
       </View>
 
       {/* Gráfico de Comparação: Original vs Atual vs Simulado */}
       <View style={styles.chartSection}>
-        <View style={styles.chartHeader}>
-          <Text style={styles.sectionTitle}>Value Comparison</Text>
-        </View>
+        <ChartHeader
+          title={t('valueComparison')}
+          subtitle={t('originalVsCurrentVsSimulated')}
+          periods={[]}
+          selectedDays={30}
+          onDaysChange={() => {}}
+        />
         <View style={styles.comparisonChartCard}>
-          <LineChart
+          <BarChart
             data={{
-              labels: ['Original', 'Current', 'Simulated'],
+              labels: [t('original'), t('current'), t('simulated')],
               datasets: [
                 {
                   data: [originalValue, currentValue, simulatedValue],
-                  color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`, // Tactical Gold
-                  strokeWidth: 2,
                 },
               ],
             }}
             width={screenWidth - spacing.md * 2}
             height={220}
             chartConfig={{
-              backgroundColor: 'transparent',
-              backgroundGradientFrom: 'transparent',
-              backgroundGradientTo: 'transparent',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`, // Tactical Gold
-              labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
-              formatYLabel: (value) => {
-                const num = Number(value);
-                if (isNaN(num)) return '0';
-                if (num >= 1000) {
-                  return `${(num / 1000).toFixed(1)}k`;
-                }
-                return num.toFixed(0);
-              },
-              propsForDots: {
-                r: '0', // Radius 0 = invisível
-                strokeWidth: '0',
-                stroke: 'transparent',
-              },
-              propsForBackgroundLines: {
-                strokeDasharray: '',
-                stroke: '#292524', // Muito escuro, quase invisível
-                strokeWidth: 0.5,
+              ...chartKitConfig,
+              barPercentage: 0.7,
+              barRadius: 6,
+              formatTopBarValue: (v: number) => {
+                if (v >= 1000) return `$${(v / 1000).toFixed(1)}k`;
+                return `$${v.toFixed(0)}`;
               },
             }}
-            bezier
-            style={styles.comparisonChart}
+            fromZero
+            style={[chartKitChartStyle, styles.comparisonChart]}
             withInnerLines={true}
-            withOuterLines={false}
-            withVerticalLines={true}
-            withHorizontalLines={true}
-            withDots={false}
+            withHorizontalLabels={true}
+            withVerticalLabels={true}
+            showValuesOnTopOfBars={true}
+            showBarTops={false}
           />
         </View>
       </View>
@@ -300,7 +283,7 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       {/* Seção: Composição do Portfólio */}
       {portfolioItems.length > 0 && (
         <View style={styles.portfolioSection}>
-          <Text style={styles.sectionTitle}>Items in this Snapshot</Text>
+          <Text style={styles.sectionTitle}>{t('itemsInSnapshot')}</Text>
           <View style={styles.portfolioList}>
             {portfolioItems.map((item, index) => (
               <React.Fragment key={item.id || index}>
@@ -312,55 +295,30 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
         </View>
       )}
 
-      {/* Gráfico de Evolução (opcional, mantido para referência) */}
-      {!isZeroDay && evolutionChartData.labels.length > 0 && (
-        <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Evolution: Actual vs Projected</Text>
-          </View>
-          <LineChart
-            data={evolutionChartData}
-            width={screenWidth - spacing.lg * 2}
-            height={200}
-            chartConfig={{
-              backgroundColor: 'transparent',
-              backgroundGradientFrom: 'transparent',
-              backgroundGradientTo: 'transparent',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(212, 194, 145, ${opacity})`, // Tactical Gold
-              labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
-              formatYLabel: (value) => {
-                const num = Number(value);
-                if (isNaN(num)) return '0';
-                if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
-                return num.toFixed(0);
-              },
-              propsForDots: {
-                r: '0',
-                strokeWidth: '0',
-                stroke: 'transparent',
-              },
-              propsForBackgroundLines: {
-                strokeDasharray: '',
-                stroke: '#292524',
-                strokeWidth: 0.5,
-              },
-            }}
-            bezier
-            style={styles.chart}
-            withInnerLines={true}
-            withOuterLines={false}
-            withVerticalLines={true}
-            withHorizontalLines={true}
-            withDots={false}
+      {/* Gráfico de Evolução — mesmo InteractiveChart do Home (touch para ver valor) */}
+      {!isZeroDay && hasEvolutionData && (
+        <View style={styles.evolutionSection}>
+          <ChartHeader
+            title={t('evolution')}
+            subtitle={t('actualVsProjected')}
+            periods={[]}
+            selectedDays={30}
+            onDaysChange={() => {}}
           />
+          <View style={[styles.chartCard, { height: 220 }]} collapsable={false}>
+            <InteractiveChart
+              data={evolutionChartPoints}
+              width={screenWidth - spacing.lg * 2}
+              height={220}
+            />
+          </View>
         </View>
       )}
 
       {isZeroDay && (
         <View style={styles.zeroDayContainer}>
           <Text style={styles.zeroDayText}>
-            Evolution analysis available from tomorrow.
+            {t('evolutionAvailableTomorrow')}
           </Text>
         </View>
       )}
@@ -596,64 +554,30 @@ const styles = StyleSheet.create({
   chartSection: {
     marginBottom: spacing.lg,
   },
-  chartHeader: {
-    // Sem marginBottom - o espaçamento vem do sectionTitle
+  evolutionSection: {
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
     fontSize: safeTypography.sizes.lg || 18,
     fontFamily: safeTypography.fonts.primary,
-    color: '#d4c291', // Tactical Gold
+    color: '#d4c291',
     fontWeight: safeTypography.weights.semiBold,
     marginBottom: spacing.md,
   },
-  // Gráfico de Comparação
+  // Gráfico de Comparação - design padronizado
   comparisonChartCard: {
-    backgroundColor: '#1c1b19', // Tactical dark background (mesmo do Dashboard)
-    borderWidth: 1,
-    borderColor: 'rgba(212, 194, 145, 0.3)', // Tactical Gold 30% opacity
-    borderRadius: 16, // rounded-2xl
-    padding: 0, // Sem padding - gráfico ocupa 100% do espaço
+    ...chartCardStyle,
     width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Efeito de profundidade sutil
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-    overflow: 'hidden',
   },
   comparisonChart: {
     marginVertical: 0,
     marginHorizontal: 0,
     borderRadius: 12,
   },
-  // Gráfico
+  // Gráfico de Evolução - design padronizado
   chartCard: {
-    backgroundColor: '#1c1b19',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 194, 145, 0.3)',
-    borderRadius: 16,
-    padding: 0,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  chartHeader: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  chartTitle: {
-    fontSize: safeTypography.sizes.lg || 18,
-    fontFamily: safeTypography.fonts.primary,
-    color: '#d4c291',
-    fontWeight: safeTypography.weights.medium,
+    ...chartCardStyle,
+    width: '100%',
   },
   chart: {
     borderRadius: 16,

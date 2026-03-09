@@ -11,7 +11,6 @@
  * `inventory_items` (per-copy rows: asset_id, market_hash_name, float, etc.).
  */
 
-import CookieManager from '@react-native-cookies/cookies';
 import { replaceInventory } from '../../database/repositories/inventoryRepo';
 import { upsertSkins } from '../../database/repositories/catalogRepo';
 import type { InventoryItemInput } from '../../database/repositories/inventoryRepo';
@@ -23,6 +22,7 @@ import {
   formatCooldown,
 } from './cooldownManager';
 import { storage } from '../storage';
+import { extractCookies } from './steamCookies';
 import { logger } from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
@@ -312,39 +312,6 @@ function mergeAssetsAndDescriptions(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function extractCookies(): Promise<{
-  sessionId: string;
-  steamLoginSecure: string;
-}> {
-  // Priority 1: MMKV (captured while WebView was still alive — most reliable)
-  const mmkvCookies = storage.getSteamCookies();
-  if (mmkvCookies?.sessionId && mmkvCookies?.steamLoginSecure) {
-    logger.log('[inventorySync] Using cookies from MMKV');
-    return mmkvCookies;
-  }
-
-  // Priority 2: Native CookieManager (may fail on Android after WebView unmount)
-  logger.log('[inventorySync] MMKV cookies not found, trying CookieManager...');
-  const cookies = await CookieManager.get('https://steamcommunity.com', true);
-
-  const sessionId =
-    (cookies as any)?.sessionid?.value ?? (cookies as any)?.sessionid ?? '';
-  const steamLoginSecure =
-    (cookies as any)?.steamLoginSecure?.value ??
-    (cookies as any)?.steamLoginSecure ??
-    '';
-
-  logger.log(`[inventorySync] CookieManager result: sessionId=${sessionId ? 'YES' : 'NO'}, loginSecure=${steamLoginSecure ? 'YES' : 'NO'}`);
-
-  if (!sessionId || !steamLoginSecure) {
-    throw new Error(
-      'Steam cookies not found. Please sign in to Steam again.',
-    );
-  }
-
-  return { sessionId, steamLoginSecure };
-}
 
 function buildInventoryUrl(steamId: string, startAssetId: string | null): string {
   const ts = Date.now();

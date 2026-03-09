@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
 } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { CompareIcon } from '@components/common';
@@ -18,6 +19,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
   firstSnapshot,
   isLoading,
 }) => {
+  const { t } = useLanguage();
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
@@ -39,15 +41,13 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
           <CompareIcon size={24} color="#d4c291" strokeWidth={2.5} />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Comparison Mode</Text>
-          <Text style={styles.subtitle}>
-            Select another snapshot from the list below to compare
-          </Text>
+          <Text style={styles.title}>{t('comparisonMode')}</Text>
+          <Text style={styles.subtitle}>{t('selectAnotherSnapshotToCompare')}</Text>
         </View>
       </View>
       <View style={styles.firstSnapshotCard}>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>Snapshot Base</Text>
+          <Text style={styles.badgeText}>{t('snapshotBase')}</Text>
         </View>
         <View style={styles.cardContent}>
           <View style={styles.cardLeft}>
@@ -57,7 +57,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
               </Text>
             ) : (
               <Text style={styles.snapshotTitle}>
-                Snapshot from {formatDate(firstSnapshot.snapshot_date)}
+                {t('snapshotFrom')} {formatDate(firstSnapshot.snapshot_date)}
               </Text>
             )}
             <View style={styles.snapshotMeta}>
@@ -66,7 +66,7 @@ export const ComparisonSelectMode: React.FC<ComparisonSelectModeProps> = ({
               </Text>
               <Text style={styles.snapshotMetaSeparator}>•</Text>
               <Text style={styles.snapshotMetaText}>
-                {firstSnapshot.item_count || 0} {firstSnapshot.item_count === 1 ? 'item' : 'items'}
+                {firstSnapshot.item_count || 0} {firstSnapshot.item_count === 1 ? t('item') : t('items')}
               </Text>
             </View>
           </View>

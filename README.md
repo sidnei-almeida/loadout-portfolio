@@ -4,7 +4,7 @@
 
 **Steam item portfolio — React Native**
 
-Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage your profile, and run portfolio analytics from your phone.
+Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage your profile, and run portfolio analytics — **all from your phone, no cloud required**.
 
 [![React Native](https://img.shields.io/badge/React_Native-0.82-61DAFB?style=flat-square&logo=react)](https://reactnative.dev/)
 [![Node](https://img.shields.io/badge/Node-20+-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
@@ -17,47 +17,57 @@ Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage
 
 ---
 
-## Table of contents
+## 🌍 Local-First: Your Data, Your Device
 
-| Section | Description |
-| :--- | :--- |
-| [Features](#features) | What the app does |
-| [Tech stack](#tech-stack) | Libraries and tools |
-| [Requirements](#requirements) | Prerequisites |
-| [Quick start](#quick-start) | Clone, install, run |
-| [Running the app](#running-the-app) | Metro and device/emulator |
-| [Scripts](#scripts) | Available npm and shell commands |
-| [Release build](#release-build-apk) | Standalone APK for testers |
-| [Reload vs rebuild](#reload-vs-rebuild) | When to reload vs full rebuild |
-| [Troubleshooting](#troubleshooting) | Common issues and fixes |
-| [Additional notes](#additional-notes) | Fonts, DevTools, deep links |
+**Loadout Portfolio** used to depend on cloud APIs and remote databases. **That's history.**
+
+The app is now **100% Local-First**. All your data — inventory, price history, portfolio snapshots, and preferences — lives **exclusively on your phone**. Nothing is stored in the cloud. No accounts on our servers. No telemetry, no analytics, no data collection.
+
+### Why this matters
+
+| Before (cloud) | Now (local-first) |
+|:---|:---|
+| Your data on our servers | Your data **only** on your device |
+| Dependency on cloud uptime | Works offline after initial sync |
+| Privacy concerns with third-party storage | **You** control your data |
+| Risk of data breach on our infrastructure | No server = nothing to breach |
+| Uninstall = "maybe deleted" | Uninstall = **permanent deletion** |
+
+All Steam API requests go **directly** from your device to Valve. We don't proxy, relay, or intercept. Your Steam credentials never touch our infrastructure — because we don't have any.
 
 ---
 
-## Features
+## ✨ Features
 
 - **Steam sign-in** — OAuth flow with deep link callback (`loadout://auth-callback`)
-- **Dashboard** — Overview of your Steam item portfolio
-- **Inventory** — Browse and manage CS2 skins and items
-- **Snapshot simulations** — Run and compare portfolio scenarios
-- **Profile management** — Update settings and preferences
+- **Dashboard** — Portfolio overview, value trends, top items
+- **Inventory** — Browse CS2 skins with filters, search, multiple view modes (cards, icons, details)
+- **Snapshot simulations** — Save portfolio snapshots, compare over time, run "what-if" ROI analysis
+- **Technical analysis** — RSI, volatility, and trend indicators per item
+- **Profile** — Steam ID, account status, session management
+- **Multi-language** — **English**, **Português (Brasil)**, and **Español** with persistent preference
 
-**Architecture:** 100% Local-First — all data stored on-device via SQLite + MMKV.
+### Tech highlights
+
+- **SQLite** — Inventory, price history, snapshots
+- **MMKV** — Session tokens, preferences, cooldown timers (fast, encrypted)
+- **React Native 0.82** — TypeScript, React 19, TanStack Query
 
 ---
 
-## Tech stack
+## 📦 Tech stack
 
 | Category | Choice |
 | :--- | :--- |
 | Framework | React Native 0.82 |
 | Language | TypeScript |
 | UI / state | React 19, React Navigation, TanStack Query |
+| Storage | SQLite (OP-SQLite), MMKV |
 | Native modules | Fast Image, WebView, Video, SVG, Gesture Handler, Safe Area, In-App Browser |
 
 ---
 
-## Requirements
+## 📋 Requirements
 
 | Platform | Requirement |
 | :--- | :--- |
@@ -67,7 +77,7 @@ Track CS2 skins, inventory, and snapshot simulations. Sign in with Steam, manage
 
 ---
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 git clone https://github.com/sidnei-almeida/loadout-portfolio.git
@@ -82,13 +92,13 @@ In a second terminal:
 npm run android   # or: npm run ios
 ```
 
-> The project uses React 19; some dependencies declare older peer ranges, so `--legacy-peer-deps` is required. A `.npmrc` file is already configured.
+> React 19 is used; some dependencies declare older peer ranges. A `.npmrc` file configures `legacy-peer-deps` automatically.
 
 ---
 
-## Running the app
+## ▶️ Running the app
 
-1. **Start Metro** (required; keep it running):
+1. **Start Metro** (keep it running):
    ```bash
    npm start
    ```
@@ -100,18 +110,18 @@ npm run android   # or: npm run ios
    npm run ios
    ```
 
-**iOS** — First time or after changing native dependencies:
+**iOS** — First run or after native dependency changes:
 
 ```bash
 bundle install
 bundle exec pod install
 ```
 
-**Android Studio:** Open the `android/` folder (not the repo root), wait for Gradle sync, then run the app with Metro already running.
+**Android:** Open the `android/` folder in Android Studio, wait for Gradle sync, then run the app with Metro already running.
 
 ---
 
-## Scripts
+## 📜 Scripts
 
 | Command | Description |
 | :--- | :--- |
@@ -122,43 +132,44 @@ bundle exec pod install
 | `npm test` | Run Jest tests |
 | `./build-apk.sh` | Build **release** APK (standalone) |
 | `./build-apk.sh debug` | Build debug APK |
+| `./build-apk.sh release --clean` | Full clean + release build |
 | `./prepare-android.sh` | Prepare Android project for Android Studio |
 | `./run-android-dev.sh` | Check device, `adb reverse`, start Metro |
 
 ---
 
-## Release build (APK)
+## 📱 Release build (APK)
 
 Standalone APK for testers (no Metro required):
 
 ```bash
 ./build-apk.sh
-# or explicitly
+# or
 ./build-apk.sh release
 ```
 
 **Output:** `android/app/build/outputs/apk/release/app-release.apk`
 
-Release builds are signed with the debug keystore (suitable for internal/testing). For Play Store distribution, configure a release keystore in `android/gradle.properties` and `android/app/build.gradle`.
+Release builds use the debug keystore by default (suitable for internal/testing). For Play Store distribution, configure a release keystore in `android/gradle.properties` and `android/app/build.gradle`.
 
 ---
 
-## Reload vs rebuild
+## 🔄 Reload vs rebuild
 
 | Change | Action |
 | :--- | :--- |
-| JS, TS, or styles only | Reload in app: press `r` in Metro terminal or shake device → Reload |
+| JS, TS, or styles only | Reload in app: `r` in Metro terminal or shake device → Reload |
 | `metro.config.js` or `babel.config.js` | Stop Metro, then `npm start -- --reset-cache` |
 | `android/` or `package.json` (dependencies) | `npm install`, then `cd android && ./gradlew clean`, then `npm run android` |
 
 ---
 
-## Troubleshooting
+## 🛠️ Troubleshooting
 
 <details>
-<summary><strong>“Unable to load script” / “No connected targets”</strong></summary>
+<summary><strong>"Unable to load script" / "No connected targets"</strong></summary>
 
-Start Metro before launching the app: run `npm start`, then `npm run android` (or Run from Android Studio).
+Start Metro before launching the app: `npm start`, then `npm run android`.
 </details>
 
 <details>
@@ -189,33 +200,55 @@ Then run the build again.
 <details>
 <summary><strong>Gradle download timeout</strong></summary>
 
-In `android/gradle/wrapper/gradle-wrapper.properties`, increase `networkTimeout` (default 120000 ms) if your connection is slow.
+In `android/gradle/wrapper/gradle-wrapper.properties`, increase `networkTimeout` if your connection is slow.
 </details>
 
 <details>
-<summary><strong>CMake “non-existent path” / ReactAndroid::jsi</strong></summary>
+<summary><strong>CMake "non-existent path" / ReactAndroid::jsi</strong></summary>
 
-Run a full clean: `./build-apk.sh release --clean`. If the error persists, clear the Gradle transform cache:
+Full clean:
+```bash
+./build-apk.sh release --clean
+```
 
+If it persists, clear Gradle transform cache:
 ```bash
 rm -rf ~/.gradle/caches/transforms-3*
 ```
-
 Then run the build again.
 </details>
 
 ---
 
-## Additional notes
+## 🌐 Environment (development)
 
-- **Fonts:** Orbitron, Rajdhani, and JetBrains Mono live in `assets/fonts/`. For Android, copy them to `android/app/src/main/assets/fonts/` if needed.
-- **DevTools on Linux:** `CHROME_PATH=/usr/bin/brave npm start` or `npm run start:devtools` (if configured).
+| Variable | Purpose |
+| :--- | :--- |
+| `ANDROID_HOME` | Path to Android SDK (e.g. `$HOME/Android/Sdk`) |
+| `CHROME_PATH` | DevTools on Linux (e.g. `/opt/brave-bin/brave`) |
+
+For Fish shell, add to `~/.config/fish/config.fish`:
+
+```fish
+set -gx ANDROID_HOME $HOME/Android/Sdk
+fish_add_path $ANDROID_HOME/emulator $ANDROID_HOME/platform-tools
+```
+
+---
+
+## 📝 Additional notes
+
+- **Fonts:** Orbitron, Rajdhani, JetBrains Mono in `assets/fonts/`. For Android, copy to `android/app/src/main/assets/fonts/` if needed.
+- **DevTools on Linux:** `CHROME_PATH=/opt/brave-bin/brave npm start` (or use your Chromium path).
 - **Deep link:** Steam auth callback uses `loadout://auth-callback`.
+- **Privacy policy:** [https://sidneioliveira.dev/loadout-portfolio/privacy](https://sidneioliveira.dev/loadout-portfolio/privacy)
 
 ---
 
 <div align="center">
 
-**[Repository](https://github.com/sidnei-almeida/loadout-portfolio)** · Documentation consolidated from project history
+**[Repository](https://github.com/sidnei-almeida/loadout-portfolio)**
+
+Loadout Portfolio — Local-first. Private. Yours.
 
 </div>

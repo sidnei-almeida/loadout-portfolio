@@ -28,6 +28,7 @@ const Keys = {
   PROFILE_CARD: 'cache.profile_card',
   STEAM_API_KEY: 'config.steam_api_key',
   CURRENCY: 'prefs.currency',
+  LANGUAGE: 'prefs.language',
   COOLDOWN_PREFIX: 'cooldown.',
 } as const;
 
@@ -106,6 +107,14 @@ export const storage = {
 
   getCurrency(): string {
     return mmkv.getString(Keys.CURRENCY) ?? 'USD';
+  },
+
+  setLanguage(locale: string): void {
+    mmkv.set(Keys.LANGUAGE, locale);
+  },
+
+  getLanguage(): string {
+    return mmkv.getString(Keys.LANGUAGE) ?? 'en';
   },
 
   // ---- Cooldowns (rate-limit tracking) ----

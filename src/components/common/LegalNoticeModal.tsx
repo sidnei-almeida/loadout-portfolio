@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { typography } from '@theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -19,7 +20,9 @@ interface LegalNoticeModalProps {
 export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
   visible,
   onClose,
-}) => (
+}) => {
+  const { t } = useLanguage();
+  return (
   <Modal
     visible={visible}
     animationType="fade"
@@ -28,7 +31,7 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
   >
     <View style={styles.backdrop}>
       <View style={styles.card}>
-        <Text style={styles.title}>LEGAL NOTICE</Text>
+        <Text style={styles.title}>{t('legalNotice')}</Text>
 
         <View style={styles.divider} />
 
@@ -51,12 +54,13 @@ export const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({
           onPress={onClose}
           activeOpacity={0.8}
         >
-          <Text style={styles.closeText}>UNDERSTOOD</Text>
+          <Text style={styles.closeText}>{t('understood')}</Text>
         </TouchableOpacity>
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   backdrop: {

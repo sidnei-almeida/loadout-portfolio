@@ -10,6 +10,7 @@ import {
 import { WebView } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 import CookieManager from '@react-native-cookies/cookies';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { useCustomAlert } from '@components/common/CustomAlertDialog';
 
@@ -35,6 +36,7 @@ export const CookieCaptureModal: React.FC<CookieCaptureModalProps> = ({
   onSuccess,
 }) => {
   const { showAlert, AlertDialog } = useCustomAlert();
+  const { t } = useLanguage();
   const [isCapturing, setIsCapturing] = useState(false);
 
   const handleShouldStartLoad = (request: ShouldStartLoadRequest): boolean => {
@@ -69,11 +71,11 @@ export const CookieCaptureModal: React.FC<CookieCaptureModalProps> = ({
 
       if (steamLoginSecure) {
         showAlert(
-          'Success',
-          'Steam session refreshed successfully.',
+          t('sessionSuccess'),
+          t('sessionSuccessMessage'),
           'success',
           [{
-            text: 'OK',
+            text: t('ok'),
             onPress: () => {
               onSuccess?.();
               onClose();
@@ -82,15 +84,15 @@ export const CookieCaptureModal: React.FC<CookieCaptureModalProps> = ({
         );
       } else {
         showAlert(
-          'Error',
-          'Cookies not found after login. Please complete the full login flow.',
+          t('error'),
+          t('sessionErrorNotFound'),
           'error',
-          [{ text: 'OK' }],
+          [{ text: t('ok') }],
         );
         setIsCapturing(false);
       }
     } catch {
-      showAlert('Error', 'Could not capture cookies. Please try again.', 'error', [{ text: 'OK' }]);
+      showAlert(t('error'), t('sessionErrorCapture'), 'error', [{ text: t('ok') }]);
       setIsCapturing(false);
     }
   };
@@ -98,10 +100,10 @@ export const CookieCaptureModal: React.FC<CookieCaptureModalProps> = ({
   const handleClose = () => {
     if (isCapturing) {
       showAlert(
-        'Please wait',
-        'Cookie capture is in progress. Please wait for it to finish.',
+        t('pleaseWait'),
+        t('pleaseWaitMessage'),
         'warning',
-        [{ text: 'OK' }],
+        [{ text: t('ok') }],
       );
       return;
     }
@@ -117,28 +119,25 @@ export const CookieCaptureModal: React.FC<CookieCaptureModalProps> = ({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Refresh Steam Session</Text>
+          <Text style={styles.title}>{t('refreshSteamSession')}</Text>
           <TouchableOpacity
             onPress={handleClose}
             disabled={isCapturing}
             style={styles.closeButton}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeButtonText}>CLOSE</Text>
+            <Text style={styles.closeButtonText}>{t('close')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            Sign in to Steam below. Your session will be captured automatically
-            after login.
-          </Text>
+          <Text style={styles.infoText}>{t('sessionInfo')}</Text>
         </View>
 
         {isCapturing && (
           <View style={styles.capturingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.capturingText}>Capturing session...</Text>
+            <Text style={styles.capturingText}>{t('capturingSession')}</Text>
           </View>
         )}
 

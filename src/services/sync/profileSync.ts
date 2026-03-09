@@ -1,18 +1,19 @@
 /**
- * Profile Sync — fetches the Steam profile using the Steam Web API
- * (`ISteamUser/GetPlayerSummaries`) and caches it locally in MMKV.
+ * Profile Sync — obtém o perfil Steam e persiste em MMKV.
  *
- * The API key can be embedded at build time or set at runtime via
- * `storage.setSteamApiKey()`.  Only public profile data is fetched.
+ * Local-first: prioridade 1 = fetch da página Steam com cookies (profileFromWeb).
+ * Fallback: Steam Web API se a chave estiver configurada (steam_level, trust_status, etc).
  */
 
 import Config from 'react-native-config';
 import { storage } from '../storage';
 import type { UserProfileCard, TrustStatus } from '../../types/user';
+import { defaultTrustStatus } from '../../types/user';
 import {
   isProfileOnCooldown,
   registerProfileSync,
 } from './cooldownManager';
+import { fetchProfileFromWeb } from './profileFromWeb';
 import { logger } from '../../utils/logger';
 
 // ---------------------------------------------------------------------------
@@ -35,26 +36,77 @@ export interface ProfileSyncResult {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches the user's Steam public profile and persists it as a
- * `UserProfileCard` in MMKV.
+ * Sincroniza o perfil Steam e persiste em MMKV.
+ *
+ * 1. Tenta obter via Web (cookies) — nome + avatar
+ * 2. Se API key configurada, complementa com steam_level e trust_status
+ * 3. Se Web falhar e houver API key, usa API como fallback completo
  *
  * @param steamId  64-bit Steam ID.
- * @throws if no API key is available, cooldown is active, or Steam errors.
  */
 export async function syncProfile(steamId: string): Promise<ProfileSyncResult> {
-  // ---- Cooldown gate ----
   if (isProfileOnCooldown()) {
     throw new Error('COOLDOWN:Profile was synced recently.');
   }
 
   const apiKey = resolveApiKey();
-  if (!apiKey) {
-    throw new Error(
-      'No Steam API key configured. Set one in Settings or embed it in the build.',
+
+  // Prioridade 1: obter via Web (cookies)
+  const webProfile = await fetchProfileFromWeb(steamId);
+
+  if (webProfile) {
+    const profileCard: UserProfileCard = {
+      steam_id: steamId,
+      persona_name: webProfile.persona_name,
+      avatar_full: webProfile.avatar_full || undefined,
+      avatar_url: webProfile.avatar_full || undefined,
+      profile_url: webProfile.profile_url,
+      trust_status: defaultTrustStatus,
+      steam_level: webProfile.steam_level,
+      account_age_years: estimateAgeFromMemberSince(webProfile.account_created),
+      country_code: webProfile.country_code,
+      updated_at: new Date().toISOString(),
+    };
+
+    // API complementa trust_status e sobrescreve steam_level se disponível
+    if (apiKey) {
+      try {
+        const trustStatus = await fetchTrustStatus(apiKey, steamId);
+        const steamLevel = await fetchSteamLevel(apiKey, steamId);
+        profileCard.trust_status = trustStatus;
+        if (steamLevel !== undefined) profileCard.steam_level = steamLevel;
+      } catch {
+        // Mantém defaults
+      }
+    }
+
+    storage.setProfileCard(profileCard as unknown as Record<string, unknown>);
+    registerProfileSync();
+    logger.log(
+      `[profileSync] Profile synced via Web for "${profileCard.persona_name}" (${steamId})`,
     );
+    return { profileCard };
   }
 
-  // ---- Fetch player summary ----
+  // Prioridade 2: fallback para Steam API (requer API key)
+  if (apiKey) {
+    return syncProfileViaApi(steamId, apiKey);
+  }
+
+  throw new Error(
+    'Could not fetch profile. Steam session may have expired — try signing in again. ' +
+      'No Steam API key configured for fallback.',
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Steam API fallback
+// ---------------------------------------------------------------------------
+
+async function syncProfileViaApi(
+  steamId: string,
+  apiKey: string,
+): Promise<ProfileSyncResult> {
   const summaryUrl =
     `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/` +
     `?key=${apiKey}&steamids=${steamId}`;
@@ -74,17 +126,15 @@ export async function syncProfile(steamId: string): Promise<ProfileSyncResult> {
     throw new Error('Player not found in Steam API response.');
   }
 
-  // ---- Fetch player bans (trust status) ----
   const trustStatus = await fetchTrustStatus(apiKey, steamId);
-
-  // ---- Fetch Steam level ----
   const steamLevel = await fetchSteamLevel(apiKey, steamId);
+  const avatarUrl = player.avatarfull ?? player.avatarmedium ?? player.avatar;
 
-  // ---- Build profile card ----
   const profileCard: UserProfileCard = {
     steam_id: steamId,
     persona_name: player.personaname ?? 'Unknown',
-    avatar_full: player.avatarfull ?? player.avatarmedium ?? player.avatar,
+    avatar_full: avatarUrl,
+    avatar_url: avatarUrl,
     profile_url: player.profileurl,
     country_code: player.loccountrycode ?? undefined,
     account_age_years: estimateAccountAge(player.timecreated),
@@ -93,16 +143,11 @@ export async function syncProfile(steamId: string): Promise<ProfileSyncResult> {
     updated_at: new Date().toISOString(),
   };
 
-  // ---- Persist in MMKV ----
   storage.setProfileCard(profileCard as unknown as Record<string, unknown>);
-
-  // ---- Register cooldown ----
   registerProfileSync();
-
   logger.log(
-    `[profileSync] Profile synced for "${profileCard.persona_name}" (${steamId})`,
+    `[profileSync] Profile synced via API for "${profileCard.persona_name}" (${steamId})`,
   );
-
   return { profileCard };
 }
 
@@ -118,12 +163,7 @@ async function fetchTrustStatus(
   apiKey: string,
   steamId: string,
 ): Promise<TrustStatus> {
-  const defaults: TrustStatus = {
-    vac_banned: false,
-    community_banned: false,
-    game_ban_count: 0,
-    economy_ban: 'none',
-  };
+  const defaults: TrustStatus = { ...defaultTrustStatus };
 
   try {
     const url =
@@ -133,11 +173,15 @@ async function fetchTrustStatus(
       headers: { 'User-Agent': USER_AGENT },
     });
 
-    if (!res.ok) { return defaults; }
+    if (!res.ok) {
+      return defaults;
+    }
 
     const data = await res.json();
     const ban = data?.players?.[0];
-    if (!ban) { return defaults; }
+    if (!ban) {
+      return defaults;
+    }
 
     return {
       vac_banned: ban.VACBanned ?? false,
@@ -162,7 +206,9 @@ async function fetchSteamLevel(
       headers: { 'User-Agent': USER_AGENT },
     });
 
-    if (!res.ok) { return undefined; }
+    if (!res.ok) {
+      return undefined;
+    }
 
     const data = await res.json();
     return data?.response?.player_level ?? undefined;
@@ -171,11 +217,41 @@ async function fetchSteamLevel(
   }
 }
 
+function estimateAgeFromMemberSince(memberSince?: string): number | undefined {
+  if (!memberSince || typeof memberSince !== 'string') return undefined;
+  const months: Record<string, number> = {
+    jan: 0, janeiro: 0, january: 0,
+    fev: 1, feb: 1, fevereiro: 1, february: 1,
+    mar: 2, marco: 2, march: 2,
+    apr: 3, abr: 3, april: 3, abril: 3,
+    mai: 4, may: 4, maio: 4,
+    jun: 5, june: 5, junho: 5,
+    jul: 6, july: 6, julho: 6,
+    ago: 7, aug: 7, agosto: 7, august: 7,
+    set: 8, sep: 8, sept: 8, setembro: 8, september: 8,
+    out: 9, oct: 9, outubro: 9, october: 9,
+    nov: 10, november: 10, novembro: 10,
+    dez: 11, dec: 11, dezembro: 11, december: 11,
+  };
+  const parts = memberSince.trim().toLowerCase().split(/\s+/);
+  if (parts.length < 2) return undefined;
+  const year = parseInt(parts[1], 10);
+  const mon = months[parts[0]] ?? months[parts[0].slice(0, 3)];
+  if (isNaN(year) || mon === undefined) return undefined;
+  const created = new Date(year, mon, 1);
+  const now = new Date();
+  const years = (now.getTime() - created.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+  return Math.floor(years);
+}
+
 function estimateAccountAge(timecreated?: number): number | undefined {
-  if (!timecreated) { return undefined; }
+  if (!timecreated) {
+    return undefined;
+  }
   const created = new Date(timecreated * 1000);
   const now = new Date();
   const years =
-    (now.getTime() - created.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    (now.getTime() - created.getTime()) /
+    (365.25 * 24 * 60 * 60 * 1000);
   return Math.floor(years);
 }

@@ -15,6 +15,7 @@ import {
   SnapshotAnalysisModal,
 } from '@components/simulator';
 import { PlusIcon } from '@components/common/Icons';
+import { useLanguage } from '@contexts/LanguageContext';
 import { spacing, typography } from '@theme';
 import { useAuth } from '@hooks/useAuth';
 import { useSnapshots } from '@hooks/useSnapshots';
@@ -22,6 +23,7 @@ import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import type { SnapshotRow } from '../database/repositories/snapshotRepo';
 
 export const SimulatorScreen: React.FC = () => {
+  const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { showAlert, AlertDialog } = useCustomAlert();
   const {
@@ -65,21 +67,21 @@ export const SimulatorScreen: React.FC = () => {
 
     if (firstSnapshot && firstSnapshot.id === snapshotId) {
       showAlert(
-        'Cannot delete',
-        'The first snapshot cannot be deleted because it is needed to calculate inventory profit/loss.',
+        t('cannotDeleteFirstSnapshotTitle'),
+        t('cannotDeleteFirstSnapshotMessage'),
         'warning',
       );
       return;
     }
 
     showAlert(
-      'Confirm delete',
-      'Are you sure you want to delete this snapshot? This action cannot be undone.',
+      t('confirmDeleteSnapshotTitle'),
+      t('confirmDeleteSnapshotMessage'),
       'warning',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -91,9 +93,9 @@ export const SimulatorScreen: React.FC = () => {
                 }
                 return current;
               });
-              showAlert('Success', 'Snapshot deleted successfully.', 'success');
+              showAlert(t('sessionSuccess'), t('snapshotDeletedSuccess'), 'success');
             } catch (error) {
-              showAlert('Error', 'Could not delete the snapshot. Please try again.', 'error');
+              showAlert(t('error'), t('errorDeleteSnapshot'), 'error');
             }
           },
         },
@@ -108,9 +110,9 @@ export const SimulatorScreen: React.FC = () => {
           <View style={[styles.listHeader, { paddingTop: statusBarHeight + spacing.md }]}>
             <View style={styles.headerTop}>
               <View style={styles.titleContainer}>
-                <Text style={styles.listTitle}>Historical Snapshots</Text>
+                <Text style={styles.listTitle}>{t('historicalSnapshots')}</Text>
                 <Text style={styles.snapshotsCount}>
-                  {snapshots.length} {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
+                  {snapshots.length} {snapshots.length === 1 ? t('snapshot') : t('snapshots')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -119,7 +121,7 @@ export const SimulatorScreen: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <PlusIcon size={18} color="#d4c291" strokeWidth={2} />
-                <Text style={styles.createButtonLabel}>NEW</Text>
+                <Text style={styles.createButtonLabel}>{t('newLabel')}</Text>
               </TouchableOpacity>
             </View>
           </View>

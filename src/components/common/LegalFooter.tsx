@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { typography } from '@theme';
 import { PrivacyModal } from './PrivacyModal';
 import { LegalNoticeModal } from './LegalNoticeModal';
 
 export const LegalFooter: React.FC = () => {
+  const { t } = useLanguage();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
 
@@ -12,13 +14,13 @@ export const LegalFooter: React.FC = () => {
     <>
       <View style={styles.container}>
         <TouchableOpacity onPress={() => setShowPrivacy(true)} activeOpacity={0.7}>
-          <Text style={styles.link}>Privacy Policy</Text>
+          <Text style={styles.link}>{t('privacyPolicy')}</Text>
         </TouchableOpacity>
 
         <Text style={styles.dot}>•</Text>
 
         <TouchableOpacity onPress={() => setShowLegal(true)} activeOpacity={0.7}>
-          <Text style={styles.link}>Legal Notice</Text>
+          <Text style={styles.link}>{t('legalNotice')}</Text>
         </TouchableOpacity>
       </View>
 

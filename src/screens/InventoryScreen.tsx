@@ -15,11 +15,10 @@ import { spacing, colors, typography } from '@theme';
 import {
   filterItems,
   sortItems,
-  SORT_OPTIONS,
-  CATEGORY_OPTIONS,
-  RARITY_OPTIONS,
   type SortValue,
 } from '@utils/filters';
+import { useTranslatedFilters } from '@hooks/useTranslatedFilters';
+import { useLanguage } from '@contexts/LanguageContext';
 import type { Item } from '@types/item';
 
 export type ViewMode = 'cards' | 'icons' | 'details';
@@ -34,6 +33,8 @@ interface FilterModalProps {
   sortValue: string;
   onSortChange: (value: string) => void;
   sortOptions: SortOption[];
+  categoryOptions: { value: string; label: string }[];
+  rarityOptions: { value: string; label: string }[];
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
 }
@@ -48,9 +49,12 @@ const FilterModal: React.FC<FilterModalProps> = ({
   sortValue,
   onSortChange,
   sortOptions,
+  categoryOptions,
+  rarityOptions,
   viewMode,
   onViewModeChange,
 }) => {
+  const { t } = useLanguage();
   const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
   const bottomNavBarHeight = Platform.OS === 'android' ? 64 : 0;
 
@@ -65,9 +69,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
       <View style={modalStyles.overlay}>
         <View style={[modalStyles.content, { paddingBottom: bottomNavBarHeight }]}>
           <View style={[modalStyles.header, { paddingTop: statusBarHeight + spacing.xs }]}>
-            <Text style={modalStyles.headerTitle}>FILTERS AND OPTIONS</Text>
+            <Text style={modalStyles.headerTitle}>{t('filtersAndOptions')}</Text>
             <TouchableOpacity onPress={onClose} style={modalStyles.closeButton}>
-              <Text style={modalStyles.closeText}>CLOSE</Text>
+              <Text style={modalStyles.closeText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -76,7 +80,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             showsVerticalScrollIndicator={false}
           >
             <View style={modalStyles.section}>
-              <Text style={modalStyles.sectionTitle}>VIEW</Text>
+              <Text style={modalStyles.sectionTitle}>{t('view')}</Text>
               <View style={modalStyles.viewModeSelector}>
                 <TouchableOpacity
                   style={[modalStyles.viewModeButton, viewMode === 'cards' && modalStyles.viewModeButtonActive]}
@@ -84,7 +88,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <GridIcon size={18} color={viewMode === 'cards' ? '#000000' : '#d4c291'} strokeWidth={2} />
-                  <Text style={[modalStyles.viewModeLabel, viewMode === 'cards' && modalStyles.viewModeLabelActive]}>Cards</Text>
+                  <Text style={[modalStyles.viewModeLabel, viewMode === 'cards' && modalStyles.viewModeLabelActive]}>{t('viewCards')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[modalStyles.viewModeButton, viewMode === 'icons' && modalStyles.viewModeButtonActive]}
@@ -92,7 +96,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <IconsIcon size={18} color={viewMode === 'icons' ? '#000000' : '#d4c291'} strokeWidth={2} />
-                  <Text style={[modalStyles.viewModeLabel, viewMode === 'icons' && modalStyles.viewModeLabelActive]}>Icons</Text>
+                  <Text style={[modalStyles.viewModeLabel, viewMode === 'icons' && modalStyles.viewModeLabelActive]}>{t('viewIcons')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[modalStyles.viewModeButton, viewMode === 'details' && modalStyles.viewModeButtonActive]}
@@ -100,13 +104,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   activeOpacity={0.8}
                 >
                   <DetailsIcon size={18} color={viewMode === 'details' ? '#000000' : '#d4c291'} strokeWidth={2} />
-                  <Text style={[modalStyles.viewModeLabel, viewMode === 'details' && modalStyles.viewModeLabelActive]}>Details</Text>
+                  <Text style={[modalStyles.viewModeLabel, viewMode === 'details' && modalStyles.viewModeLabelActive]}>{t('viewDetails')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={modalStyles.section}>
-              <Text style={modalStyles.sectionTitle}>SORT BY</Text>
+              <Text style={modalStyles.sectionTitle}>{t('sortBy')}</Text>
               {sortOptions.map((option) => (
                 <TouchableOpacity
                   key={option.value}
@@ -120,8 +124,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
               ))}
             </View>
 
-            <FilterChips label="CATEGORY" options={CATEGORY_OPTIONS} selectedValues={selectedCategories} onToggle={onCategoryToggle} />
-            <FilterChips label="RARITY" options={RARITY_OPTIONS} selectedValues={selectedRarities} onToggle={onRarityToggle} />
+            <FilterChips label={t('category')} options={categoryOptions} selectedValues={selectedCategories} onToggle={onCategoryToggle} />
+            <FilterChips label={t('rarity')} options={rarityOptions} selectedValues={selectedRarities} onToggle={onRarityToggle} />
           </ScrollView>
         </View>
       </View>
@@ -131,6 +135,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
 export const InventoryScreen: React.FC = () => {
   const { items, isLoading } = usePortfolio();
+  const { t } = useLanguage();
+  const { sortOptions, categoryOptions, rarityOptions } = useTranslatedFilters();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRarities, setSelectedRarities] = useState<string[]>([]);
@@ -196,7 +202,7 @@ export const InventoryScreen: React.FC = () => {
     <View style={styles.screenContainer}>
       <View style={styles.headerContainer}>
         <View style={styles.toolbar}>
-          <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Search items..." style={styles.searchBar} />
+          <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder={t('searchItems')} style={styles.searchBar} />
           <TouchableOpacity
             style={[styles.filterButton, { width: buttonSize, height: buttonSize }, (hasActiveFilters || sortValue !== 'price_desc') && styles.filterButtonActive]}
             onPress={() => setIsFilterModalVisible(true)}
@@ -209,10 +215,10 @@ export const InventoryScreen: React.FC = () => {
 
       <View style={styles.resultsContainer}>
         {isLoading && filteredAndSortedItems.length === 0 ? (
-          <Loading message="Loading inventory..." />
+          <Loading message={t('loadingInventory')} />
         ) : filteredAndSortedItems.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No items found</Text>
+            <Text style={styles.emptyText}>{t('noItemsFound')}</Text>
           </View>
         ) : (
           <FlatList
@@ -242,7 +248,9 @@ export const InventoryScreen: React.FC = () => {
         onRarityToggle={handleRarityToggle}
         sortValue={sortValue}
         onSortChange={value => setSortValue(value as SortValue)}
-        sortOptions={SORT_OPTIONS as SortOption[]}
+        sortOptions={sortOptions}
+        categoryOptions={categoryOptions}
+        rarityOptions={rarityOptions}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />

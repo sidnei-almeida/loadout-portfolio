@@ -7,8 +7,8 @@ import {
   Animated,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, typography } from '@theme';
-import { CheckCircleIcon } from './Icons';
+import { useLanguage } from '@contexts/LanguageContext';
+import { spacing, typography } from '@theme';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {
@@ -37,9 +37,9 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
   steps,
   onComplete,
 }) => {
+  const { t } = useLanguage();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  const checkmarkAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
@@ -59,24 +59,8 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
     } else {
       fadeAnim.setValue(0);
       scaleAnim.setValue(0.9);
-      checkmarkAnim.setValue(0);
     }
-  }, [visible, fadeAnim, scaleAnim, checkmarkAnim]);
-
-  // Animar checkmark quando uma etapa é completada
-  const completedCount = steps.filter(s => s.status === 'completed').length;
-  
-  useEffect(() => {
-    if (completedCount > 0 && visible) {
-      checkmarkAnim.setValue(0);
-      Animated.spring(checkmarkAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 5,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [completedCount, visible, checkmarkAnim]);
+  }, [visible, fadeAnim, scaleAnim]);
 
   // Verificar se todas as etapas foram concluídas
   const allCompleted = steps.every(step => step.status === 'completed');
@@ -92,7 +76,7 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
     }
   }, [allCompleted, isProcessing, visible, onComplete]);
 
-  const renderStep = (step: RefreshStep, index: number) => {
+  const renderStep = (step: RefreshStep) => {
     const isActive = step.status === 'processing';
     const isCompleted = step.status === 'completed';
     const isPending = step.status === 'pending';
@@ -101,11 +85,11 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
       <View key={step.id} style={styles.stepContainer}>
         <View style={styles.stepIconContainer}>
           {isCompleted ? (
-            <CheckCircleIcon size={24} color="#22C55E" strokeWidth={2.5} />
+            <Text style={styles.stepDotCompleted}>•</Text>
           ) : isActive ? (
             <ActivityIndicator size="small" color="#d4c291" />
           ) : (
-            <View style={[styles.stepDot, isPending && styles.stepDotPending]} />
+            <View style={styles.stepDotPending} />
           )}
         </View>
         <View style={styles.stepContent}>
@@ -149,13 +133,12 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>UPDATING DATA</Text>
-            <View style={styles.titleUnderline} />
+            <Text style={styles.title}>{t('updatingData')}</Text>
           </View>
 
           {/* Steps */}
           <View style={styles.stepsContainer}>
-            {steps.map((step, index) => renderStep(step, index))}
+            {steps.map((step) => renderStep(step))}
           </View>
 
           {/* Footer - Mostrar "Tudo pronto" quando concluído */}
@@ -168,8 +151,8 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
                 },
               ]}
             >
-              <CheckCircleIcon size={32} color="#22C55E" strokeWidth={2.5} />
-              <Text style={styles.completeMessage}>ALL DONE</Text>
+              <Text style={styles.footerDot}>•</Text>
+              <Text style={styles.completeMessage}>{t('allDone')}</Text>
             </Animated.View>
           )}
         </Animated.View>
@@ -181,19 +164,19 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: safeSpacing.lg,
   },
   container: {
-    backgroundColor: '#1c1b19', // Tactical dark background
+    backgroundColor: 'rgba(15, 15, 15, 0.95)',
     borderRadius: 16,
     padding: safeSpacing.xl,
     width: '100%',
     maxWidth: 420,
     borderWidth: 1,
-    borderColor: 'rgba(212, 194, 145, 0.3)', // Tactical Gold border
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
@@ -207,16 +190,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: safeTypography.sizes.sm + 4 || 17,
     fontFamily: safeTypography.fonts.primaryMedium,
-    color: '#d4c291', // Tactical Gold
+    color: '#d4c291',
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: safeSpacing.xs,
-  },
-  titleUnderline: {
-    width: 60,
-    height: 2,
-    backgroundColor: 'rgba(212, 194, 145, 0.5)',
-    marginTop: safeSpacing.xs,
+    letterSpacing: 3,
+    marginBottom: 0,
   },
   stepsContainer: {
     gap: safeSpacing.md,
@@ -228,21 +205,21 @@ const styles = StyleSheet.create({
     gap: safeSpacing.md,
   },
   stepIconContainer: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#d4c291',
-    opacity: 0.6,
+  stepDotCompleted: {
+    fontSize: 20,
+    color: '#d4c291',
+    lineHeight: 24,
   },
   stepDotPending: {
-    backgroundColor: '#6B7280',
-    opacity: 0.4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   stepContent: {
     flex: 1,
@@ -250,37 +227,40 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: safeTypography.sizes.sm || 13,
     fontFamily: safeTypography.fonts.secondary,
-    color: '#9CA3AF',
+    color: '#6B7280',
     letterSpacing: 0.5,
   },
   stepLabelActive: {
-    color: '#d4c291',
+    color: '#FFFFFF',
     fontFamily: safeTypography.fonts.secondarySemiBold,
     fontWeight: safeTypography.weights.semiBold,
   },
   stepLabelCompleted: {
-    color: '#22C55E',
-    fontFamily: safeTypography.fonts.secondarySemiBold,
-    fontWeight: safeTypography.weights.semiBold,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: safeTypography.fonts.secondary,
+    fontWeight: safeTypography.weights.medium,
   },
   stepLabelPending: {
-    color: '#6B7280',
-    opacity: 0.6,
+    color: '#4B5563',
+    opacity: 0.8,
   },
   footer: {
     marginTop: safeSpacing.lg,
     paddingTop: safeSpacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(212, 194, 145, 0.15)',
     alignItems: 'center',
     gap: safeSpacing.sm,
+  },
+  footerDot: {
+    fontSize: 18,
+    color: '#d4c291',
+    lineHeight: 22,
   },
   completeMessage: {
     fontSize: safeTypography.sizes.sm + 2 || 15,
     fontFamily: safeTypography.fonts.secondarySemiBold,
-    color: '#22C55E',
+    color: 'rgba(255, 255, 255, 0.7)',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     fontWeight: safeTypography.weights.semiBold,
   },
 });

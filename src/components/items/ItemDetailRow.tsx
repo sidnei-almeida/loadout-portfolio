@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
@@ -51,7 +52,16 @@ const parseItemName = (name: string) => {
   };
 };
 
+const CONDITION_TO_KEY: Record<string, 'wearFactoryNew' | 'wearMinimalWear' | 'wearFieldTested' | 'wearWellWorn' | 'wearBattleScarred'> = {
+  'Factory New': 'wearFactoryNew',
+  'Minimal Wear': 'wearMinimalWear',
+  'Field-Tested': 'wearFieldTested',
+  'Well-Worn': 'wearWellWorn',
+  'Battle-Scarred': 'wearBattleScarred',
+};
+
 export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) => {
+  const { t } = useLanguage();
   const rarityColor = getRarityColor(item.rarity_tag || item.rarity || item.market_hash_name);
   const totalValue = (item.price || item.current_price || 0) * (item.quantity || 1);
   const unitPrice = item.price || item.current_price || 0;
@@ -108,12 +118,12 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
         {/* Linha 2: Wear + Quantidade */}
         <View style={styles.metadataRow}>
           {condition && (
-            <Text style={styles.condition}>{condition}</Text>
+            <Text style={styles.condition}>{CONDITION_TO_KEY[condition] ? t(CONDITION_TO_KEY[condition]) : condition}</Text>
           )}
           {item.quantity > 1 && (
             <>
               {condition && <Text style={styles.metadataSeparator}> • </Text>}
-              <Text style={styles.quantity}>Qtd: {item.quantity}</Text>
+              <Text style={styles.quantity}>{t('quantityShort')}: {item.quantity}</Text>
             </>
           )}
         </View>
@@ -126,12 +136,12 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
         
         {/* Preço Unitário (se quantidade > 1) */}
         {item.quantity > 1 && (
-          <Text style={styles.unitPrice}>{formatCurrency(unitPrice)} un</Text>
+          <Text style={styles.unitPrice}>{formatCurrency(unitPrice)} {t('perUnit')}</Text>
         )}
         
         {/* Float abaixo do preço */}
         {item.float_value !== null && item.float_value !== undefined && (
-          <Text style={styles.floatValue}>Float: {item.float_value.toFixed(4)}</Text>
+          <Text style={styles.floatValue}>{t('floatShort')}: {item.float_value.toFixed(4)}</Text>
         )}
       </View>
     </TouchableOpacity>

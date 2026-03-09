@@ -23,6 +23,7 @@ import {
 import { WebView } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 import CookieManager from '@react-native-cookies/cookies';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { storage } from '@services/storage';
 import { logger } from '@utils/logger';
@@ -48,6 +49,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
@@ -126,7 +128,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
             await finishLogin(profileMatch[1]);
             return;
           }
-          Alert.alert('Error', 'Could not detect Steam ID. Please try again.');
+          Alert.alert(t('error'), t('errorDetectSteamId'));
           processedRef.current = false;
           setIsProcessing(false);
           return;
@@ -135,7 +137,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
         await finishLogin(steamId);
       } catch (error) {
         logger.error('[AUTH] Error processing login:', error);
-        Alert.alert('Error', 'Error processing login. Please try again.');
+        Alert.alert(t('error'), t('sessionErrorCapture'));
         processedRef.current = false;
         setIsProcessing(false);
       }
@@ -187,7 +189,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
 
   const handleClose = () => {
     if (isProcessing) {
-      Alert.alert('Please wait', 'Login is being processed.');
+      Alert.alert(t('pleaseWait'), t('pleaseWaitMessage'));
       return;
     }
     onClose();
@@ -197,7 +199,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
     <View style={styles.loadingOverlay}>
       <ActivityIndicator size="large" color="#d4c291" />
       <Animated.Text style={[styles.loadingText, { opacity: pulseAnim }]}>
-        ESTABLISHING SECURE CONNECTION...
+        {t('establishingSecureConnection')}
       </Animated.Text>
     </View>
   );
@@ -211,21 +213,21 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>SIGN IN WITH STEAM</Text>
+          <Text style={styles.title}>{t('signInWithSteam')}</Text>
           <View style={styles.headerRight}>
             {!isProcessing && (
               <TouchableOpacity onPress={handleClose} style={styles.cancelButton} activeOpacity={0.7}>
-                <Text style={styles.cancelButtonText}>CANCEL</Text>
+                <Text style={styles.cancelButtonText}>{t('cancelLogin')}</Text>
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.secureText}>Secure connection</Text>
+          <Text style={styles.secureText}>{t('secureConnection')}</Text>
         </View>
 
         {isProcessing ? (
           <View style={styles.processingContainer}>
             <ActivityIndicator size="large" color="#d4c291" />
-            <Text style={styles.processingText}>PROCESSING LOGIN...</Text>
+            <Text style={styles.processingText}>{t('processingLogin')}</Text>
           </View>
         ) : (
           <View style={styles.webviewContainer}>

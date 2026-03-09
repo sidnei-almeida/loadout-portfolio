@@ -2,6 +2,7 @@ import React from 'react';
 import { FlatList, StyleSheet, View, Text } from 'react-native';
 import { ItemCard } from '@components/items/ItemCard';
 import { Loading } from '@components/common/Loading';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing } from '@theme';
 import type { Item } from '@types/item';
 
@@ -16,6 +17,7 @@ export const InventoryGrid: React.FC<InventoryGridProps> = ({
   isLoading = false,
   onItemPress,
 }) => {
+  const { t } = useLanguage();
   const renderItem = ({ item }: { item: Item }) => (
     <ItemCard item={item} onPress={() => onItemPress?.(item)} />
   );
@@ -26,7 +28,7 @@ export const InventoryGrid: React.FC<InventoryGridProps> = ({
   if (isLoading && items.length === 0) {
     return (
       <View style={styles.container}>
-        <Loading message="Loading inventory..." />
+        <Loading message={t('loadingInventory')} />
       </View>
     );
   }
@@ -34,7 +36,7 @@ export const InventoryGrid: React.FC<InventoryGridProps> = ({
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No items found</Text>
+        <Text style={styles.emptyText}>{t('noItemsFound')}</Text>
       </View>
     );
   }

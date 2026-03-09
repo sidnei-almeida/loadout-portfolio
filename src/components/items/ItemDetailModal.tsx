@@ -12,8 +12,11 @@ import {
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { InteractiveChart, ChartPoint } from '@components/common/InteractiveChart';
+import { ChartHeader } from '@components/common/ChartHeader';
+import { chartCardStyle } from '@theme/chartTheme';
 import FastImage from 'react-native-fast-image';
 import Svg, { Polygon, Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
@@ -55,21 +58,29 @@ interface ItemDetailModalProps {
   onClose: () => void;
 }
 
-const CHART_PERIODS = [
-  { days: 7, label: '7D' },
-  { days: 30, label: '30D' },
-  { days: 365, label: 'TUDO' },
+const CHART_PERIODS_BASE = [
+  { days: 7, labelKey: '7D' as const },
+  { days: 30, labelKey: '30D' as const },
+  { days: 90, labelKey: '90D' as const },
+  { days: 365, labelKey: 'all' as const },
 ];
 
-/**
- * Get wear condition from float value
- */
-const getWearCondition = (floatValue: number): string => {
-  if (floatValue < 0.07) return 'Factory New';
-  if (floatValue < 0.15) return 'Minimal Wear';
-  if (floatValue < 0.38) return 'Field-Tested';
-  if (floatValue < 0.45) return 'Well-Worn';
-  return 'Battle-Scarred';
+/** Translation keys for wear condition by float value */
+const getWearConditionKey = (floatValue: number): 'wearFactoryNew' | 'wearMinimalWear' | 'wearFieldTested' | 'wearWellWorn' | 'wearBattleScarred' => {
+  if (floatValue < 0.07) return 'wearFactoryNew';
+  if (floatValue < 0.15) return 'wearMinimalWear';
+  if (floatValue < 0.38) return 'wearFieldTested';
+  if (floatValue < 0.45) return 'wearWellWorn';
+  return 'wearBattleScarred';
+};
+
+/** Map condition from market_hash_name (English) to translation key */
+const CONDITION_TO_KEY: Record<string, 'wearFactoryNew' | 'wearMinimalWear' | 'wearFieldTested' | 'wearWellWorn' | 'wearBattleScarred'> = {
+  'Factory New': 'wearFactoryNew',
+  'Minimal Wear': 'wearMinimalWear',
+  'Field-Tested': 'wearFieldTested',
+  'Well-Worn': 'wearWellWorn',
+  'Battle-Scarred': 'wearBattleScarred',
 };
 
 /**
@@ -159,6 +170,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   item,
   onClose,
 }) => {
+  const { t } = useLanguage();
   const [selectedDays, setSelectedDays] = useState(30);
   const [history, setHistory] = useState<ItemHistoryResponse | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -395,7 +407,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
       } catch (error) {
         if (cancelled) return;
         logger.error('[ITEM_MODAL] Erro ao carregar histórico:', error);
-        setHistoryError('Error loading price history');
+        setHistoryError(t('errorLoadingHistory'));
         setHistory(null);
       } finally {
         if (!cancelled) {
@@ -439,7 +451,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const { weapon, skin, condition } = parseItemName(item.market_hash_name || '');
   const floatValue = item.float_value ?? 0;
   const floatPercentage = Math.min(100, Math.max(0, (floatValue / 1.0) * 100));
-  const wearCondition = floatValue > 0 ? getWearCondition(floatValue) : null;
+  const wearCondition = floatValue > 0 ? t(getWearConditionKey(floatValue)) : null;
 
   const hasValidChartData = chartPoints.length > 0;
   const cardHeight = 280;
@@ -460,7 +472,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         {/* Header com botão fechar */}
         <View style={[styles.header, { paddingTop: statusBarHeight + safeSpacing.md }]}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
-            <Text style={styles.closeButtonText}>FECHAR</Text>
+            <Text style={styles.closeButtonText}>{t('close')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -479,7 +491,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 )}
               </Text>
               {condition && (
-                <Text style={styles.headerCondition}>{condition.toUpperCase()}</Text>
+                <Text style={styles.headerCondition}>
+                  {(CONDITION_TO_KEY[condition] ? t(CONDITION_TO_KEY[condition]) : condition).toUpperCase()}
+                </Text>
               )}
             </View>
 
@@ -558,7 +572,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <View style={styles.floatSection}>
               {/* Header da Seção Float */}
               <View style={styles.floatHeader}>
-                <Text style={styles.floatSectionTitle}>ITEM CONDITION</Text>
+                <Text style={styles.floatSectionTitle}>{t('itemCondition')}</Text>
               </View>
               
               <View style={styles.floatBarContainer}>
@@ -635,12 +649,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               {/* Labels da Barra */}
               <View style={styles.floatLabels}>
                 <View style={styles.floatValueContainer}>
-                  <Text style={styles.floatLabel}>Float Value</Text>
+                  <Text style={styles.floatLabel}>{t('floatValue')}</Text>
                   <Text style={styles.floatValueText}>{floatValue.toFixed(6)}</Text>
                 </View>
                 {wearCondition && (
                   <View style={styles.floatWearContainer}>
-                    <Text style={styles.floatWearLabel}>Desgaste</Text>
+                    <Text style={styles.floatWearLabel}>{t('wear')}</Text>
                     <Text style={styles.floatWearText}>{wearCondition}</Text>
                   </View>
                 )}
@@ -650,34 +664,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
           {/* Seção 3: Histórico de Preço (Mini Chart) */}
           <View style={styles.chartSection}>
-            <View style={styles.chartHeader}>
-              <Text style={styles.sectionTitle}>History</Text>
-              <View style={styles.chartFilters}>
-                {CHART_PERIODS.map((period) => (
-                  <TouchableOpacity
-                    key={period.days}
-                    style={[
-                      styles.filterButton,
-                      selectedDays === period.days && styles.filterButtonActive,
-                    ]}
-                    onPress={() => setSelectedDays(period.days)}
-                    activeOpacity={0.6}
-                  >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        selectedDays === period.days && styles.filterTextActive,
-                      ]}
-                    >
-                      {period.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+            <ChartHeader
+              title={t('history')}
+              subtitle={t('priceVariation')}
+              periods={CHART_PERIODS_BASE.map(p => ({ days: p.days, label: p.labelKey === 'all' ? t('all') : p.labelKey }))}
+              selectedDays={selectedDays}
+              onDaysChange={setSelectedDays}
+            />
 
-            {/* Chart Card - O gráfico É o card (flutua diretamente) - Estilo idêntico ao Dashboard */}
-            <View style={[styles.chartCard, { height: cardHeight }]}>
+            {/* Chart Card — mesmo design do Dashboard (collapsable=false garante touch no Android) */}
+            <View style={[styles.chartCard, { height: cardHeight }]} collapsable={false}>
               {isLoadingHistory ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#d4c291" />
@@ -688,13 +684,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 </View>
               ) : !hasValidChartData ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No history available</Text>
+                  <Text style={styles.emptyText}>{t('noHistoryAvailable')}</Text>
                 </View>
               ) : (
                 <InteractiveChart
                   data={chartPoints}
                   width={chartWidth}
                   height={cardHeight}
+                  selectedDays={selectedDays}
                 />
               )}
             </View>
@@ -705,19 +702,19 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <View style={styles.statsSection}>
               <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Min</Text>
+                  <Text style={styles.statLabel}>{t('statMin')}</Text>
                   <Text style={styles.statValue}>
                     {formatCurrency(history.summary.min_price)}
                   </Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Max</Text>
+                  <Text style={styles.statLabel}>{t('statMax')}</Text>
                   <Text style={styles.statValue}>
                     {formatCurrency(history.summary.max_price)}
                   </Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Avg</Text>
+                  <Text style={styles.statLabel}>{t('statAvg')}</Text>
                   <Text style={styles.statValue}>
                     {formatCurrency(history.summary.avg_price)}
                   </Text>
@@ -729,14 +726,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           {/* Seção 5: Análise Técnica */}
           {history?.analysis && (
             <View style={styles.analysisSection}>
-              <Text style={styles.analysisSectionTitle}>Technical Analysis</Text>
+              <Text style={styles.analysisSectionTitle}>{t('technicalAnalysis')}</Text>
 
               <View style={styles.analysisContainer}>
                 {/* LINHA 1: RSI e Volatilidade (2 Colunas) */}
                 <View style={styles.analysisTopRow}>
                   {history.analysis.rsi !== undefined && (
                     <View style={styles.analysisCardSmall}>
-                      <Text style={styles.analysisLabel}>RSI</Text>
+                      <Text style={styles.analysisLabel}>{t('rsi')}</Text>
                       <View style={styles.rsiContainer}>
                         <View style={styles.rsiBar}>
                           <View
@@ -758,17 +755,17 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                       </View>
                       <Text style={styles.analysisStatus}>
                         {history.analysis.rsi_state === 'Oversold'
-                          ? 'Oversold'
+                          ? t('oversold')
                           : history.analysis.rsi_state === 'Overbought'
-                          ? 'Overbought'
-                          : 'Neutral'}
+                          ? t('overbought')
+                          : t('neutral')}
                       </Text>
                     </View>
                   )}
 
                   {history.analysis.volatility_value !== undefined && (
                     <View style={styles.analysisCardSmall}>
-                      <Text style={styles.analysisLabel}>Volatility</Text>
+                      <Text style={styles.analysisLabel}>{t('volatility')}</Text>
                       <View style={styles.volatilityContainer}>
                         <View style={styles.volatilityBar}>
                           <View
@@ -792,10 +789,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                       </View>
                       <Text style={styles.analysisStatus}>
                         {history.analysis.volatility === 'High'
-                          ? 'High'
+                          ? t('volatilityHigh')
                           : history.analysis.volatility === 'Medium'
-                          ? 'Avg'
-                          : 'Low'}
+                          ? t('volatilityAvg')
+                          : t('volatilityLow')}
                       </Text>
                     </View>
                   )}
@@ -804,7 +801,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 {/* LINHA 2: Tendência (Full Width, Layout Horizontal) */}
                 {history.summary && history.summary.price_change_percent !== undefined && (
                   <View style={styles.trendCardFullWidth}>
-                    <Text style={styles.trendCardLabel}>Overall Trend</Text>
+                    <Text style={styles.trendCardLabel}>{t('overallTrend')}</Text>
                     <View style={styles.trendCardRight}>
                       <View style={styles.trendCardStatus}>
                         <Text
@@ -830,12 +827,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         </Text>
                         <Text style={styles.trendCardStatusText}>
                           {history.summary.price_change_percent >= 5
-                            ? 'Alta Forte'
+                            ? t('strongRise')
                             : history.summary.price_change_percent >= 0
-                            ? 'Alta Leve'
+                            ? t('mildRise')
                             : history.summary.price_change_percent <= -5
-                            ? 'Queda Forte'
-                            : 'Queda Leve'}
+                            ? t('strongFall')
+                            : t('mildFall')}
                         </Text>
                       </View>
                       <View
@@ -1209,58 +1206,9 @@ const styles = StyleSheet.create({
   chartSection: {
     padding: safeSpacing.lg,
   },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: safeSpacing.md,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: safeTypography.fonts.primarySemiBold,
-    color: '#d4c291',
-    fontWeight: safeTypography.weights.semiBold,
-  },
-  chartFilters: {
-    flexDirection: 'row',
-    gap: safeSpacing.xs,
-  },
-  filterButton: {
-    paddingHorizontal: safeSpacing.md,
-    paddingVertical: safeSpacing.xs,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  filterButtonActive: {
-    borderColor: '#d4c291',
-    backgroundColor: '#2a2a2a', // Cinza escuro em vez de dourado
-  },
-  filterText: {
-    fontSize: 12,
-    fontFamily: safeTypography.fonts.secondaryMedium,
-    color: '#9CA3AF',
-    fontWeight: safeTypography.weights.medium,
-  },
-  filterTextActive: {
-    color: '#d4c291',
-    fontWeight: safeTypography.weights.semiBold,
-  },
   chartCard: {
-    backgroundColor: '#1c1b19',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 194, 145, 0.12)',
-    borderRadius: 16,
-    padding: 0,
+    ...chartCardStyle,
     width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
   },
   loadingContainer: {
     alignItems: 'center',

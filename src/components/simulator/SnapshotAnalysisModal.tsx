@@ -25,6 +25,7 @@ import {
   SnapshotsList,
 } from './index';
 import { CompareIcon, ArrowLeftIcon, LoadingModal } from '@components/common';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import {
   calculateWhatIf,
@@ -108,6 +109,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
   snapshots,
   onClose,
 }) => {
+  const { t } = useLanguage();
   const [analysis, setAnalysis] = useState<SnapshotAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -132,7 +134,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
       setFirstSnapshot(snapshot);
     } catch (error) {
       logger.error('[MODAL] Error loading analysis:', error);
-      Alert.alert('Error', 'Could not load snapshot analysis. Please try again.');
+      Alert.alert(t('error'), t('errorLoadAnalysisMessage'));
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -188,7 +190,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
       }
     } catch (error) {
       logger.error('[MODAL] Error comparing snapshots:', error);
-      Alert.alert('Error', 'Could not compare snapshots. Please try again.');
+      Alert.alert(t('error'), t('errorCompareMessage'));
       handleExitComparisonMode();
     } finally {
       setIsLoadingComparison(false);
@@ -206,7 +208,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
         <View style={[styles.header, { paddingTop: statusBarHeight + spacing.xs }]}>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>
-              {comparisonMode ? 'Compare Snapshots' : 'Snapshot Analysis'}
+              {comparisonMode ? t('compareSnapshots') : t('snapshotAnalysis')}
             </Text>
           </View>
           <View style={styles.headerActions}>
@@ -216,7 +218,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
-              <Text style={styles.closeButtonText}>CLOSE</Text>
+              <Text style={styles.closeButtonText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -225,7 +227,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
           <View style={[styles.content, { paddingBottom: bottomNavBarHeight }]}>
             <ComparisonSelectMode firstSnapshot={firstSnapshot!} isLoading={false} />
             <View style={styles.snapshotsListContainer}>
-              <Text style={styles.selectSnapshotTitle}>Select another snapshot</Text>
+              <Text style={styles.selectSnapshotTitle}>{t('selectAnotherSnapshot')}</Text>
               <SnapshotsList
                 snapshots={snapshots.filter(s => s.id !== firstSnapshot?.id)}
                 isLoading={false}
@@ -243,7 +245,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
                     <TouchableOpacity style={styles.backButton} onPress={handleExitComparisonMode}>
                       <View style={styles.backButtonContent}>
                         <ArrowLeftIcon size={18} color="#d4c291" strokeWidth={2} />
-                        <Text style={styles.backButtonText}>Back to Analysis</Text>
+                        <Text style={styles.backButtonText}>{t('backToAnalysis')}</Text>
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -256,14 +258,14 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
               <WhatIfSimulator snapshot={snapshot} analysis={analysis} currentPortfolioValue={0} />
             ) : (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Error loading analysis</Text>
+                <Text style={styles.emptyText}>{t('errorLoadingAnalysis')}</Text>
               </View>
             )}
           </ScrollView>
         )}
 
-        <LoadingModal visible={isLoadingAnalysis} title="LOADING ANALYSIS" message="Processing snapshot data..." />
-        <LoadingModal visible={isLoadingComparison && comparisonMode} title="COMPARING SNAPSHOTS" message="Analyzing differences between snapshots..." />
+        <LoadingModal visible={isLoadingAnalysis} title={t('loadingAnalysis')} message={t('processingSnapshotData')} />
+        <LoadingModal visible={isLoadingComparison && comparisonMode} title={t('comparingSnapshots')} message={t('analyzingDifferences')} />
       </View>
     </Modal>
   );

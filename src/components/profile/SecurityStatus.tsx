@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Card } from '@components/common/Card';
-import { CheckCircleIcon, AlertCircleIcon } from '@components/common/Icons';
-import { colors, spacing, typography } from '@theme';
+import { AlertCircleIcon } from '@components/common/Icons';
+import { useLanguage } from '@contexts/LanguageContext';
+import { spacing, typography } from '@theme';
 import type { TrustStatus } from '@types/user';
 
 interface SecurityStatusProps {
@@ -10,66 +11,55 @@ interface SecurityStatusProps {
 }
 
 export const SecurityStatus: React.FC<SecurityStatusProps> = ({ trustStatus }) => {
-  const isClean = !trustStatus.vac_banned && 
-                 !trustStatus.community_banned && 
+  const { t } = useLanguage();
+  const isClean = !trustStatus.vac_banned &&
+                 !trustStatus.community_banned &&
                  trustStatus.game_ban_count === 0 &&
                  (trustStatus.economy_ban === 'none' || !trustStatus.economy_ban);
 
   const getStatusInfo = () => {
     if (isClean) {
       return {
-        text: 'Secure',
-        bgColor: 'rgba(34, 197, 94, 0.15)',
-        borderColor: '#22C55E',
-        textColor: '#22C55E',
-        icon: CheckCircleIcon,
-        summary: 'No security issues detected.',
+        text: t('secure'),
+        bgColor: 'rgba(34, 197, 94, 0.06)',
+        textColor: '#4ADE80',
+        summary: t('noSecurityIssues'),
       };
     }
-    
+
     return {
-      text: 'Active Alerts',
-      bgColor: 'rgba(245, 158, 11, 0.15)',
-      borderColor: '#F59E0B',
-      textColor: '#F59E0B',
-      icon: AlertCircleIcon,
-      summary: 'Security issues detected on this account.',
+      text: t('activeAlerts'),
+      bgColor: 'rgba(245, 158, 11, 0.06)',
+      textColor: '#FBBF24',
+      summary: t('securityIssuesDetected'),
     };
   };
 
   const statusInfo = getStatusInfo();
-  const StatusIcon = statusInfo.icon;
 
   const getStatusSummary = () => {
-    if (isClean) {
-      return 'No security issues detected.';
+    if (isClean) return t('noSecurityIssues');
+
+    const issues: string[] = [];
+    if (trustStatus.vac_banned) issues.push(t('vacBanActive'));
+    if (trustStatus.community_banned) issues.push(t('communityBanDetected'));
+    if (trustStatus.game_ban_count > 0) {
+      issues.push(t('gameBans', { count: trustStatus.game_ban_count }));
     }
-    
-    const issues = [];
-    if (trustStatus.vac_banned) issues.push('VAC ban');
-    if (trustStatus.community_banned) issues.push('Community ban');
-    if (trustStatus.game_ban_count > 0) issues.push(`${trustStatus.game_ban_count} game ban(s)`);
     if (trustStatus.economy_ban && trustStatus.economy_ban !== 'none') {
-      issues.push(`Economy ban: ${trustStatus.economy_ban}`);
+      issues.push(`${t('economyBan')} ${trustStatus.economy_ban}`);
     }
-    
-    return `Issues detected: ${issues.join(', ')}`;
+
+    return `${t('issuesDetected')} ${issues.join(', ')}`;
   };
 
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Account Status</Text>
+          <Text style={styles.title}>{t('accountStatus')}</Text>
         </View>
-        <View style={[
-          styles.pill,
-          {
-            backgroundColor: statusInfo.bgColor,
-            borderColor: statusInfo.borderColor,
-          }
-        ]}>
-          <StatusIcon size={14} color={statusInfo.textColor} strokeWidth={2.5} />
+        <View style={[styles.pill, { backgroundColor: statusInfo.bgColor }]}>
           <Text style={[styles.pillText, { color: statusInfo.textColor }]}>
             {statusInfo.text}
           </Text>
@@ -83,18 +73,14 @@ export const SecurityStatus: React.FC<SecurityStatusProps> = ({ trustStatus }) =
           {trustStatus.vac_banned && (
             <View style={styles.listItem}>
               <AlertCircleIcon size={16} color="#F59E0B" strokeWidth={2} />
-              <Text style={styles.listItemText}>
-                VAC ban active
-              </Text>
+              <Text style={styles.listItemText}>{t('vacBanActive')}</Text>
             </View>
           )}
           
           {trustStatus.community_banned && (
             <View style={styles.listItem}>
               <AlertCircleIcon size={16} color="#F59E0B" strokeWidth={2} />
-              <Text style={styles.listItemText}>
-                Community ban detected
-              </Text>
+              <Text style={styles.listItemText}>{t('communityBanDetected')}</Text>
             </View>
           )}
           
@@ -102,7 +88,7 @@ export const SecurityStatus: React.FC<SecurityStatusProps> = ({ trustStatus }) =
             <View style={styles.listItem}>
               <AlertCircleIcon size={16} color="#F59E0B" strokeWidth={2} />
               <Text style={styles.listItemText}>
-                {trustStatus.game_ban_count} game ban(s) on record
+                {t('gameBans', { count: trustStatus.game_ban_count })}
               </Text>
             </View>
           )}
@@ -111,7 +97,7 @@ export const SecurityStatus: React.FC<SecurityStatusProps> = ({ trustStatus }) =
             <View style={styles.listItem}>
               <AlertCircleIcon size={16} color="#F59E0B" strokeWidth={2} />
               <Text style={styles.listItemText}>
-                Economy ban: {trustStatus.economy_ban}
+                {t('economyBan')} {trustStatus.economy_ban}
               </Text>
             </View>
           )}
@@ -145,19 +131,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   pill: {
-    flexDirection: 'row',
+    alignSelf: 'flex-start',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm + 2,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: 20,
-    borderWidth: 1,
-    gap: spacing.xs,
   },
   pillText: {
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semiBold,
     fontFamily: typography.fonts.secondaryBold,
-    letterSpacing: 0.3,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   summary: {

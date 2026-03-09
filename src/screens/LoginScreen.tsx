@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@components/common/Screen';
 import { SteamButton } from '@components/auth/SteamButton';
 import { SteamLoginModal } from '@components/auth/SteamLoginModal';
@@ -22,7 +23,10 @@ const safeTypography = typography || {
 };
 const safeSpacing = spacing || { sm: 8, md: 16, xl: 20, xxl: 28 };
 
+const PROFILE_QUERY_KEY = ['profile-card'] as const;
+
 export const LoginScreen: React.FC = () => {
+  const queryClient = useQueryClient();
   const {
     login,
     setPostLoginSyncing,
@@ -90,6 +94,7 @@ export const LoginScreen: React.FC = () => {
       try {
         await syncProfile(steamId);
         logger.log('[LOGIN] Profile synced successfully');
+        queryClient.invalidateQueries({ queryKey: [...PROFILE_QUERY_KEY] });
       } catch (err: any) {
         syncErrors.push(`Profile: ${err?.message}`);
         logger.warn('[LOGIN] Profile sync failed:', err?.message);

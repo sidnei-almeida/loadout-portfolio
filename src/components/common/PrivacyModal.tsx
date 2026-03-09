@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 
 interface PrivacyModalProps {
@@ -15,6 +16,7 @@ interface PrivacyModalProps {
 }
 
 export const PrivacyModal: React.FC<PrivacyModalProps> = ({ visible, onClose }) => {
+  const { t } = useLanguage();
   return (
     <Modal
       visible={visible}
@@ -27,7 +29,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ visible, onClose }) 
 
         <View style={styles.contentContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>PRIVACY POLICY</Text>
+            <Text style={styles.title}>{t('privacyPolicy')}</Text>
           </View>
 
           <ScrollView
@@ -109,7 +111,7 @@ export const PrivacyModal: React.FC<PrivacyModalProps> = ({ visible, onClose }) 
               onPress={onClose}
               activeOpacity={0.8}
             >
-              <Text style={styles.backButtonText}>BACK</Text>
+              <Text style={styles.backButtonText}>{t('back')}</Text>
             </TouchableOpacity>
           </View>
         </View>

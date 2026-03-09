@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, Linking, TouchableOpacity } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { typography } from '@theme';
 
 const PRIVACY_URL = 'https://sidneioliveira.dev/loadout-portfolio/privacy';
@@ -10,23 +11,22 @@ interface LegalDisclaimerProps {
 
 export const LegalDisclaimer: React.FC<LegalDisclaimerProps> = ({
   showPrivacyLink = false,
-}) => (
-  <>
-    <Text style={styles.text}>
-      Loadout Portfolio is not affiliated with, endorsed by, or connected to
-      Valve Corporation. Counter-Strike, CS2, and the Steam logo are registered
-      trademarks of Valve Corporation.
-    </Text>
-    {showPrivacyLink && (
-      <TouchableOpacity
-        onPress={() => Linking.openURL(PRIVACY_URL)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.link}>Privacy Policy</Text>
-      </TouchableOpacity>
-    )}
-  </>
-);
+}) => {
+  const { t } = useLanguage();
+  return (
+    <>
+      <Text style={styles.text}>{t('legalDisclaimerText')}</Text>
+      {showPrivacyLink && (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(PRIVACY_URL)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.link}>{t('privacyPolicy')}</Text>
+        </TouchableOpacity>
+      )}
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   text: {

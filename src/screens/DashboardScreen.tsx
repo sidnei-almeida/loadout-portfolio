@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { StyleSheet, Alert, View, Text, TouchableOpacity } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@components/common/Screen';
 import { Loading } from '@components/common/Loading';
 import { RefreshProgressModal } from '@components/common/RefreshProgressModal';
@@ -8,17 +9,17 @@ import { ItemDetailModal } from '@components/items/ItemDetailModal';
 import { usePortfolio } from '@hooks/usePortfolio';
 import { usePortfolioHistory } from '@hooks/usePortfolioHistory';
 import { useAuth } from '@hooks/useAuth';
-import { storage } from '@services/storage';
+import { useLanguage } from '@contexts/LanguageContext';
 import { spacing, typography } from '@theme';
 import { logger } from '@utils/logger';
-import { syncInventory } from '@services/sync/inventorySync';
-import { syncPrices } from '@services/sync/priceSync';
+import { syncInventory, syncPrices, syncProfile } from '@services/sync';
 import { getCatalog } from '../database/repositories/catalogRepo';
 import { getItemCount, getInventory, getTotalValue } from '../database/repositories/inventoryRepo';
 import { createSnapshot, type SnapshotItemInput } from '../database/repositories/snapshotRepo';
 import type { Item } from '@types/item';
 
 const safeSpacing = spacing || { md: 16, xl: 20, xxl: 28 };
+const PROFILE_QUERY_KEY = ['profile-card'] as const;
 
 type RefreshStepStatus = 'pending' | 'processing' | 'completed';
 
@@ -29,14 +30,17 @@ interface RefreshStep {
 }
 
 export const DashboardScreen: React.FC = () => {
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState(30);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshSteps, setRefreshSteps] = useState<RefreshStep[]>([
-    { id: 'sync', label: 'Syncing inventory with Steam', status: 'pending' },
-    { id: 'prices', label: 'Updating price history', status: 'pending' },
-    { id: 'load', label: 'Loading updated data', status: 'pending' },
+  const [refreshSteps, setRefreshSteps] = useState<RefreshStep[]>(() => [
+    { id: 'sync', label: t('syncingInventory'), status: 'pending' },
+    { id: 'prices', label: t('updatingPrices'), status: 'pending' },
+    { id: 'profile', label: t('syncingProfile'), status: 'pending' },
+    { id: 'load', label: t('loadingData'), status: 'pending' },
   ]);
 
   const { steamId } = useAuth();
@@ -44,18 +48,22 @@ export const DashboardScreen: React.FC = () => {
   const { history, isLoading: isLoadingHistory, refetch: refetchHistory } = usePortfolioHistory(selectedDays);
 
   const valueChange = useMemo(() => {
-    if (!history || history.length < 2) {
+    if (!history || !Array.isArray(history) || history.length < 2) {
       return undefined;
     }
 
-    const currentValue = history[history.length - 1].total_value;
-    const firstValue = history[0].total_value;
+    const currentValue = Number(history[history.length - 1]?.total_value) || 0;
+    const firstValue = Number(history[0]?.total_value) || 0;
     const changeValue = currentValue - firstValue;
     const changePercent = firstValue > 0 ? (changeValue / firstValue) * 100 : 0;
 
+    if (typeof changeValue !== 'number' || !Number.isFinite(changeValue)) {
+      return undefined;
+    }
+
     return {
       value: changeValue,
-      percent: changePercent,
+      percent: Number.isFinite(changePercent) ? changePercent : 0,
     };
   }, [history]);
 
@@ -67,11 +75,12 @@ export const DashboardScreen: React.FC = () => {
 
   const resetSteps = useCallback(() => {
     setRefreshSteps([
-      { id: 'sync', label: 'Syncing inventory with Steam', status: 'pending' },
-      { id: 'prices', label: 'Updating price history', status: 'pending' },
-      { id: 'load', label: 'Loading updated data', status: 'pending' },
+      { id: 'sync', label: t('syncingInventory'), status: 'pending' },
+      { id: 'prices', label: t('updatingPrices'), status: 'pending' },
+      { id: 'profile', label: t('syncingProfile'), status: 'pending' },
+      { id: 'load', label: t('loadingData'), status: 'pending' },
     ]);
-  }, []);
+  }, [t]);
 
   const handleRefreshComplete = useCallback(() => {
     setIsRefreshing(false);
@@ -91,7 +100,7 @@ export const DashboardScreen: React.FC = () => {
         await syncInventory(steamId);
       } catch (err: any) {
         if (err?.message?.startsWith('COOLDOWN:')) {
-          Alert.alert('Cooldown', err.message.replace('COOLDOWN:', ''));
+          Alert.alert(t('cooldown'), err.message.replace('COOLDOWN:', ''));
           setIsRefreshing(false);
           resetSteps();
           return;
@@ -115,7 +124,19 @@ export const DashboardScreen: React.FC = () => {
       }
       updateStep('prices', 'completed');
 
-      // Step 3: Reload local data + auto-snapshot
+      // Step 3: Sync profile (name + avatar)
+      updateStep('profile', 'processing');
+      try {
+        await syncProfile(steamId);
+        queryClient.invalidateQueries({ queryKey: [...PROFILE_QUERY_KEY] });
+      } catch (err: any) {
+        if (!err?.message?.startsWith('COOLDOWN:')) {
+          logger.warn('[Dashboard] Profile sync failed:', err?.message);
+        }
+      }
+      updateStep('profile', 'completed');
+
+      // Step 4: Reload local data + auto-snapshot
       updateStep('load', 'processing');
 
       const count = getItemCount();
@@ -156,7 +177,7 @@ export const DashboardScreen: React.FC = () => {
       logger.error('[Dashboard] Refresh failed:', error);
       setIsRefreshing(false);
       resetSteps();
-      Alert.alert('Error', 'Could not update data. Please try again.');
+      Alert.alert(t('error'), t('errorUpdateData'));
     }
   };
 
@@ -173,7 +194,7 @@ export const DashboardScreen: React.FC = () => {
   if (isLoading && items.length === 0) {
     return (
       <Screen showPremiumBackground={false}>
-        <Loading fullScreen message="Loading portfolio..." />
+        <Loading fullScreen message={t('loadingPortfolio')} />
       </Screen>
     );
   }
@@ -186,17 +207,14 @@ export const DashboardScreen: React.FC = () => {
       <View style={styles.screenContainer}>
         <Screen style={styles.scrollContent} showPremiumBackground={false}>
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>NO INVENTORY DATA</Text>
-            <Text style={styles.emptySubtitle}>
-              Your inventory hasn't been synced yet, or the sync failed.
-              Tap below to fetch your CS2 inventory from Steam.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('noInventoryData')}</Text>
+            <Text style={styles.emptySubtitle}>{t('noInventorySubtitle')}</Text>
             <TouchableOpacity
               style={styles.emptyButton}
               onPress={handleRefresh}
               activeOpacity={0.8}
             >
-              <Text style={styles.emptyButtonText}>SYNC NOW</Text>
+              <Text style={styles.emptyButtonText}>{t('syncNow')}</Text>
             </TouchableOpacity>
           </View>
         </Screen>
@@ -215,21 +233,21 @@ export const DashboardScreen: React.FC = () => {
     <View style={styles.screenContainer}>
       <Screen scrollable style={styles.scrollContent} showPremiumBackground={false}>
         <ValueCard
-          totalValue={totalValue}
+          totalValue={Number(totalValue) || 0}
           change={valueChange}
           onRefresh={handleRefresh}
           isLoading={isLoading || isRefreshing}
         />
 
         <PortfolioChart
-          history={history}
+          history={Array.isArray(history) ? history : []}
           isLoading={isLoadingHistory}
           selectedDays={selectedDays}
           onDaysChange={setSelectedDays}
         />
 
         <ItemsList
-          items={items}
+          items={Array.isArray(items) ? items : []}
           isLoading={isLoading}
           onItemPress={handleItemPress}
         />

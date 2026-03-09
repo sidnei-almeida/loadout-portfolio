@@ -68,3 +68,6 @@ export type Theme = typeof theme;
 // Hook para usar tema (será implementado quando necessário)
 export const useTheme = () => theme;
 
+// Re-export do tema de gráficos
+export { CHART_COLORS, chartKitConfig, chartContainerStyle, chartCardStyle, chartKitChartStyle } from './chartTheme';
+

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 
 // Helper para garantir valores seguros
@@ -122,6 +123,7 @@ export const ValueCard: React.FC<ValueCardProps> = ({
   onRefresh,
   isLoading = false,
 }) => {
+  const { t } = useLanguage();
   // Garantir que totalValue seja um número válido
   const safeTotalValue = typeof totalValue === 'number' && !isNaN(totalValue) ? totalValue : 0;
   const displayValue = useCountAnimation(safeTotalValue, 800);
@@ -198,7 +200,7 @@ export const ValueCard: React.FC<ValueCardProps> = ({
   };
 
   const formatChange = () => {
-    if (!change) return 'Loading history...';
+    if (!change) return t('loadingHistory');
     const sign = change.value >= 0 ? '+' : '';
     return `${sign}${formatCurrency(change.value)} (${sign}${change.percent.toFixed(2)}%)`;
   };
@@ -247,7 +249,7 @@ export const ValueCard: React.FC<ValueCardProps> = ({
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.label}>CURRENT VALUE</Text>
+        <Text style={styles.label}>{t('currentValue')}</Text>
       </View>
 
       {/* Content */}

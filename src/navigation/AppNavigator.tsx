@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '@contexts/AuthContext';
+import { useLanguage } from '@contexts/LanguageContext';
 import { Loading } from '@components/common/Loading';
 import { VideoBackground } from '@components/common/VideoBackground';
 import { RefreshProgressModal } from '@components/common/RefreshProgressModal';
@@ -67,6 +68,7 @@ const styles = StyleSheet.create({
 });
 
 const MainTabs: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -112,15 +114,16 @@ const MainTabs: React.FC = () => {
         contentStyle: { backgroundColor: 'transparent' },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Home' }} />
-      <Tab.Screen name="Inventory" component={InventoryScreen} options={{ tabBarLabel: 'Inventory' }} />
-      <Tab.Screen name="Simulator" component={SimulatorScreen} options={{ tabBarLabel: 'Simulate' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: t('tabHome') }} />
+      <Tab.Screen name="Inventory" component={InventoryScreen} options={{ tabBarLabel: t('tabInventory') }} />
+      <Tab.Screen name="Simulator" component={SimulatorScreen} options={{ tabBarLabel: t('tabSimulate') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: t('tabProfile') }} />
     </Tab.Navigator>
   );
 };
 
 export const AppNavigator: React.FC = () => {
+  const { t } = useLanguage();
   const {
     isAuthenticated,
     isLoading,
@@ -133,13 +136,31 @@ export const AppNavigator: React.FC = () => {
   const currentStepIndex = postLoginSyncSteps.findIndex(step => step.status === 'processing');
   const currentStep = currentStepIndex >= 0 ? currentStepIndex : postLoginSyncSteps.length - 1;
 
+  const translatedSteps = useMemo(
+    () =>
+      postLoginSyncSteps.map(s => ({
+        ...s,
+        label:
+          s.id === 'sync'
+            ? t('syncingInventory')
+            : s.id === 'prices'
+              ? t('updatingPrices')
+              : s.id === 'profile'
+                ? t('syncingProfile')
+                : s.id === 'load'
+                  ? t('loadingData')
+                  : s.label,
+      })),
+    [postLoginSyncSteps, t],
+  );
+
   const handlePostLoginSyncComplete = () => {
     setPostLoginSyncing(false);
     resetPostLoginSyncSteps();
   };
 
   if (isLoading) {
-    return <Loading fullScreen message="Loading..." />;
+    return <Loading fullScreen message={t('loading')} />;
   }
 
   return (
@@ -150,7 +171,7 @@ export const AppNavigator: React.FC = () => {
         <RefreshProgressModal
           visible={isPostLoginSyncing}
           currentStep={currentStep}
-          steps={postLoginSyncSteps}
+          steps={translatedSteps}
           onComplete={handlePostLoginSyncComplete}
         />
       )}

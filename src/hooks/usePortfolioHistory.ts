@@ -30,9 +30,10 @@ export const usePortfolioHistory = (_days: number = 30) => {
 
       return snapshots
         .map(s => ({
-          date: s.snapshot_date,
-          total_value: s.total_value,
+          date: s.snapshot_date || '',
+          total_value: Number(s.total_value) || 0,
         }))
+        .filter(p => p.date)
         .sort((a, b) => a.date.localeCompare(b.date));
     },
     enabled: isAuthenticated,

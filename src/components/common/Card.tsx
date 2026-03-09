@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing } from '@theme';
+import { spacing } from '@theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -8,13 +8,7 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, style }) => {
-  return (
-    <View style={[styles.card, style]}>
-      {/* Linha dourada no topo para consistência */}
-      <View style={styles.topGlowLine} />
-      {children}
-    </View>
-  );
+  return <View style={[styles.card, style]}>{children}</View>;
 };
 
 const styles = StyleSheet.create({
@@ -33,15 +27,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 6,
-  },
-  topGlowLine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.primary,
-    opacity: 0.5,
   },
 });
 

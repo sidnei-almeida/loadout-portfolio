@@ -37,6 +37,8 @@ export const useProfileCard = () => {
         return {
           steam_id: steamId,
           persona_name: `Steam User`,
+          avatar_full: undefined,
+          avatar_url: undefined,
           trust_status: {
             vac_banned: false,
             community_banned: false,
@@ -49,6 +51,7 @@ export const useProfileCard = () => {
     },
     enabled: isAuthenticated,
     staleTime: 10 * 60 * 1000,
+    refetchOnMount: 'always',
   });
 
   const invalidate = useCallback(() => {

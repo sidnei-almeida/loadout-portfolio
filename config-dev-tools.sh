@@ -7,7 +7,12 @@ echo "🔧 Configurando React Native DevTools..."
 echo ""
 
 # Verificar qual navegador está disponível
-if command -v brave &> /dev/null; then
+# Prioridade: binário real do brave-bin (Arch) > wrapper /usr/bin/brave
+if [ -x /opt/brave-bin/brave ]; then
+    BROWSER="brave"
+    BROWSER_PATH="/opt/brave-bin/brave"
+    echo "✅ Brave (brave-bin) encontrado: $BROWSER_PATH"
+elif command -v brave &> /dev/null; then
     BROWSER="brave"
     BROWSER_PATH=$(which brave)
     echo "✅ Brave encontrado: $BROWSER_PATH"
@@ -26,17 +31,21 @@ else
 fi
 
 # Configurar variáveis de ambiente para esta sessão
+# EDGE_PATH e CHROME_PATH são usados pelo React Native DevTools
 export CHROME_PATH="$BROWSER_PATH"
+export EDGE_PATH="$BROWSER_PATH"
 export REACT_EDITOR="$BROWSER"
 export REACT_NATIVE_EDITOR="$BROWSER"
 
 echo ""
 echo "✅ Variáveis configuradas para esta sessão:"
 echo "   CHROME_PATH=$CHROME_PATH"
+echo "   EDGE_PATH=$EDGE_PATH"
 echo "   REACT_EDITOR=$REACT_EDITOR"
 echo ""
 echo "💡 Para configurar permanentemente, adicione ao seu ~/.bashrc ou ~/.zshrc:"
 echo "   export CHROME_PATH=\"$BROWSER_PATH\""
+echo "   export EDGE_PATH=\"$BROWSER_PATH\""
 echo "   export REACT_EDITOR=\"$BROWSER\""
 echo "   export REACT_NATIVE_EDITOR=\"$BROWSER\""
 echo ""

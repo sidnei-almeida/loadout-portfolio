@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { Top5ItemRow } from './Top5ItemRow';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 import type { Item } from '@types/item';
 
@@ -29,6 +30,7 @@ export const ItemsList: React.FC<ItemsListProps> = ({
   isLoading = false,
   onItemPress,
 }) => {
+  const { t } = useLanguage();
   // Ordenar itens por valor (maior primeiro) e limitar a TOP 5
   const sortedItems = useMemo(() => {
     const sorted = [...items].sort((a, b) => {
@@ -46,9 +48,9 @@ export const ItemsList: React.FC<ItemsListProps> = ({
     return (
       <View style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>TOP 5 MOST VALUABLE SKINS</Text>
+          <Text style={styles.title}>{t('top5Valuable')}</Text>
           {totalItems > 0 && (
-            <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? 'item' : 'items'}</Text>
+            <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? t('item') : t('items')}</Text>
           )}
         </View>
         <View style={styles.loadingContainer}>
@@ -62,13 +64,13 @@ export const ItemsList: React.FC<ItemsListProps> = ({
     return (
       <View style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>TOP 5 MOST VALUABLE SKINS</Text>
+          <Text style={styles.title}>{t('top5Valuable')}</Text>
           {totalItems > 0 && (
-            <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? 'item' : 'items'}</Text>
+            <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? t('item') : t('items')}</Text>
           )}
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No items found</Text>
+          <Text style={styles.emptyText}>{t('noItemsFound')}</Text>
         </View>
       </View>
     );
@@ -78,8 +80,8 @@ export const ItemsList: React.FC<ItemsListProps> = ({
     <View style={styles.container}>
       {/* Title com contagem total */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>TOP 5 MOST VALUABLE SKINS</Text>
-        <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? 'item' : 'items'}</Text>
+        <Text style={styles.title}>{t('top5Valuable')}</Text>
+        <Text style={styles.itemsCount}>{totalItems} {totalItems === 1 ? t('item') : t('items')}</Text>
       </View>
 
       {/* Compact Data Rows */}
@@ -97,7 +99,7 @@ export const ItemsList: React.FC<ItemsListProps> = ({
 
       {/* Footer Text */}
       <Text style={styles.footerText}>
-        See all details and items in the Inventory tab.
+        {t('seeAllInInventory')}
       </Text>
     </View>
   );

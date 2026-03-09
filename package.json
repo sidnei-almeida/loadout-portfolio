@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "android:build": "cd android && ./gradlew assembleDebug",
+    "android:install": "adb install -r android/app/build/outputs/apk/debug/app-debug.apk",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "CHROME_PATH=/usr/bin/brave EDGE_PATH=/usr/bin/brave react-native start",
+    "start": "CHROME_PATH=/opt/brave-bin/brave EDGE_PATH=/opt/brave-bin/brave react-native start",
     "test": "jest",
     "postinstall": "patch-package"
   },
@@ -21,6 +23,7 @@
     "@react-navigation/native": "^7.1.25",
     "@react-navigation/stack": "^7.6.12",
     "@tanstack/react-query": "^5.90.12",
+    "i18n-js": "^4.5.3",
     "react": "19.1.1",
     "react-native": "0.82.1",
     "react-native-chart-kit": "^6.12.0",

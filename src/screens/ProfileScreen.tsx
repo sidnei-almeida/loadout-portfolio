@@ -1,32 +1,53 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, StatusBar, Platform, TouchableOpacity, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  StatusBar,
+  Platform,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@components/common/Screen';
 import { Loading } from '@components/common/Loading';
-import { ProfileHeader, SecurityStatus, CookieStatus, CookieCaptureModal } from '@components/profile';
+import { ProfileHeader, SecurityStatus, CookieStatus, CookieCaptureModal, LanguageSelector } from '@components/profile';
 import { useAuth } from '@hooks/useAuth';
+import { useLanguage } from '@contexts/LanguageContext';
 import { useProfileCard } from '@hooks/useProfileCard';
 import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import { spacing, typography } from '@theme';
 import { LegalFooter } from '@components/common/LegalFooter';
 
 export const ProfileScreen: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, steamId } = useAuth();
   const { profileCard, isLoading, refetch } = useProfileCard();
+  const { t } = useLanguage();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
   const { showAlert, AlertDialog } = useCustomAlert();
   const [isCookieModalVisible, setIsCookieModalVisible] = useState(false);
   const [cookieRefreshTrigger, setCookieRefreshTrigger] = useState(0);
 
-  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 64;
+  const bottomPadding = tabBarHeight + insets.bottom + 24;
 
   const handleLogout = () => {
     showAlert(
-      'Sign out',
-      'Are you sure you want to sign out?',
+      t('signOutConfirmTitle'),
+      t('signOutConfirmMessage'),
       'warning',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Sign out',
+          text: t('signOut'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -39,14 +60,24 @@ export const ProfileScreen: React.FC = () => {
   if (isLoading && !profileCard) {
     return (
       <Screen showPremiumBackground={false}>
-        <Loading fullScreen message="Loading profile..." />
+        <Loading fullScreen message={t('profileLoading')} />
       </Screen>
     );
   }
 
   return (
-    <Screen scrollable style={styles.container} showPremiumBackground={false}>
-      <View style={[styles.content, { paddingTop: statusBarHeight + spacing.md }]}>
+    <Screen scrollable={false} style={styles.container} showPremiumBackground={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: statusBarHeight + spacing.md,
+            paddingBottom: 32 + bottomPadding,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {profileCard && (
           <>
             <ProfileHeader profileCard={profileCard} />
@@ -62,6 +93,8 @@ export const ProfileScreen: React.FC = () => {
           </>
         )}
 
+        <LanguageSelector />
+
         <CookieCaptureModal
           visible={isCookieModalVisible}
           onClose={() => setIsCookieModalVisible(false)}
@@ -72,15 +105,15 @@ export const ProfileScreen: React.FC = () => {
         />
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-            <Text style={styles.logoutButtonText}>Sign out</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
+            <Text style={styles.logoutButtonText}>{t('signOut')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.footerContainer}>
           <LegalFooter />
         </View>
-      </View>
+      </ScrollView>
       <AlertDialog />
     </Screen>
   );
@@ -88,11 +121,14 @@ export const ProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
+  scrollView: { flex: 1 },
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+  },
   actions: { marginTop: spacing.lg, gap: spacing.md },
   footerContainer: { marginTop: spacing.xl, paddingBottom: spacing.md, alignItems: 'center' },
   logoutButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(229, 115, 115, 0.05)',
     borderWidth: 1,
     borderColor: '#E57373',
     paddingVertical: spacing.sm + 2,
@@ -104,9 +140,9 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: typography.sizes.sm,
     color: '#E57373',
-    fontWeight: typography.weights.bold,
+    fontWeight: typography.weights.semiBold,
     fontFamily: typography.fonts.secondaryBold,
-    letterSpacing: 0.5,
+    letterSpacing: 2,
     textTransform: 'uppercase',
   },
 });

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -18,6 +19,7 @@ interface TermsModalProps {
 }
 
 export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
+  const { t } = useLanguage();
   return (
     <Modal
       visible={visible}
@@ -33,7 +35,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
         <View style={styles.contentContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>TERMS OF SERVICE</Text>
+            <Text style={styles.title}>{t('termsOfService')}</Text>
           </View>
 
           {/* Scrollable Content */}
@@ -130,7 +132,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ visible, onClose }) => {
               onPress={onClose}
               activeOpacity={0.8}
             >
-              <Text style={styles.backButtonText}>BACK</Text>
+              <Text style={styles.backButtonText}>{t('back')}</Text>
             </TouchableOpacity>
           </View>
         </View>
