@@ -41,11 +41,23 @@ All Steam API requests go **directly** from your device to Valve. We don't proxy
 
 - **Steam sign-in** — OAuth flow with deep link callback (`loadout://auth-callback`)
 - **Dashboard** — Portfolio overview, value trends, top items
-- **Inventory** — Browse CS2 skins with filters, search, multiple view modes (cards, icons, details)
+- **Inventory** — Browse CS2 skins with filters, search, multiple view modes (cards, icons, details). Supports **Storage Units** with encrypted display.
 - **Snapshot simulations** — Save portfolio snapshots, compare over time, run "what-if" ROI analysis
 - **Technical analysis** — RSI, volatility, and trend indicators per item
 - **Profile** — Steam ID, account status, session management
 - **Multi-language** — **English**, **Português (Brasil)**, and **Español** with persistent preference
+
+#### Storage Units — Features and limitations
+
+Loadout displays **Storage Units** from your CS2 inventory. Valve's API lets us know an item is a Storage Unit and exposes the item count inside (`storage_unit_item_count`), but **does not allow listing or inspecting the contents**.
+
+| Valve limitation | App behavior |
+|:---|:---|
+| Cannot "open" or enter a Storage Unit via API | We show only the *wrapper*: custom name (if any) + total item count |
+| Contents remain encrypted/hidden client-side | Fixed subtitle "ENCRYPTED VAULT" to indicate contents are not accessible |
+| No per-item pricing or details | Value area shows `[ XX ITEMS ]` in Tactical Gold, no breakdown |
+
+**Valve does not allow third-party apps to access the inside of Storage Units.** Loadout surfaces what the API provides — item count and custom display name — and makes it clear the vault is "encrypted," without attempting to estimate internal value or list individual skins.
 
 ### Tech highlights
 
