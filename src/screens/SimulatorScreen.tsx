@@ -49,7 +49,7 @@ export const SimulatorScreen: React.FC = () => {
 
     try {
       await createSnapshot({ description, icon });
-      showAlert('Success', 'Snapshot created successfully.', 'success');
+      showAlert(t('sessionSuccess'), t('snapshotCreatedSuccess'), 'success');
     } catch (error) {
       logger.error('[SIMULATOR] Error creating snapshot:', error);
       throw error;

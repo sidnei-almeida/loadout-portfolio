@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@contexts/LanguageContext';
 import { Screen } from '@components/common/Screen';
 import { SteamButton } from '@components/auth/SteamButton';
 import { SteamLoginModal } from '@components/auth/SteamLoginModal';
@@ -28,6 +29,7 @@ const PROFILE_QUERY_KEY = ['profile-card'] as const;
 
 export const LoginScreen: React.FC = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const { showAlert, AlertDialog } = useCustomAlert();
   const {
     login,
@@ -51,7 +53,7 @@ export const LoginScreen: React.FC = () => {
       const savedCookies = storage.getSteamCookies();
       if (!savedCookies?.sessionId || !savedCookies?.steamLoginSecure) {
         logger.error('[LOGIN] Steam cookies not found in MMKV after WebView login');
-        showAlert('Session Error', 'Steam cookies were not captured. Please try signing in again.', 'error');
+        showAlert(t('sessionErrorTitle'), t('sessionErrorCookiesNotCaptured'), 'error');
         setPostLoginSyncing(false);
         setIsLoading(false);
         return;
@@ -138,13 +140,13 @@ export const LoginScreen: React.FC = () => {
       // Show sync issues to user (non-blocking)
       if (syncErrors.length > 0) {
         setTimeout(() => {
-          showAlert('Sync Issues', 'Some data could not be synced:\n\n' + syncErrors.join('\n'), 'warning');
+          showAlert(t('syncIssuesTitle'), t('syncIssuesMessage', { errors: syncErrors.join('\n') }), 'warning');
         }, 2000);
       }
 
     } catch (error) {
       logger.error('[LOGIN] Error:', error);
-      showAlert('Error', 'An unexpected error occurred. Please try again.', 'error');
+      showAlert(t('unexpectedErrorTitle'), t('unexpectedErrorMessage'), 'error');
       setPostLoginSyncing(false);
     } finally {
       setIsLoading(false);
