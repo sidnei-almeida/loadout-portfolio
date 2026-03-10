@@ -2,71 +2,36 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PremiumBackground } from './PremiumBackground';
 
 interface ScreenProps {
   children: React.ReactNode;
   scrollable?: boolean;
   style?: ViewStyle;
-  showPremiumBackground?: boolean;
 }
 
 export const Screen: React.FC<ScreenProps> = ({
   children,
   scrollable = false,
   style,
-  showPremiumBackground = true,
 }) => {
-  const content = showPremiumBackground ? (
-    <PremiumBackground>{children}</PremiumBackground>
-  ) : (
-    children
-  );
-
   if (scrollable) {
     return (
       <SafeAreaView style={styles.safeArea} edges={[]}>
-        {showPremiumBackground ? (
-          <PremiumBackground>
-          <ScrollView
-            style={[styles.container, { backgroundColor: 'transparent' }]}
-            contentContainerStyle={[
-              styles.scrollContent,
-              style,
-              { backgroundColor: 'transparent' },
-            ]}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled={true}
-          >
-            {children}
-          </ScrollView>
-          </PremiumBackground>
-        ) : (
-          <ScrollView
-            style={[styles.container, { backgroundColor: 'transparent' }]}
-            contentContainerStyle={[
-              styles.scrollContent,
-              style,
-            ]}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled={true}
-          >
-            {children}
-          </ScrollView>
-        )}
+        <ScrollView
+          style={[styles.container, { backgroundColor: 'transparent' }]}
+          contentContainerStyle={[styles.scrollContent, style]}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+        >
+          {children}
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={[]}>
-      {showPremiumBackground ? (
-        <PremiumBackground>
-          <View style={[styles.container, style]}>{children}</View>
-        </PremiumBackground>
-      ) : (
-        <View style={[styles.container, style, { backgroundColor: 'transparent' }]}>{children}</View>
-      )}
+      <View style={[styles.container, style, { backgroundColor: 'transparent' }]}>{children}</View>
     </SafeAreaView>
   );
 };

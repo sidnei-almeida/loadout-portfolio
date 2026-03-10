@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, Text, FlatList, ScrollView, Platform, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, FlatList, ScrollView, Platform, StatusBar } from 'react-native';
 import { Screen } from '@components/common/Screen';
+import { PressableScale } from '@components/common/PressableScale';
+import { StaggeredListItem } from '@components/common/StaggeredListItem';
+import { AnimatedModal } from '@components/common/AnimatedModal';
 import { SearchBar } from '@components/common/SearchBar';
 import { FilterChips } from '@components/common/FilterChips';
 import { type SortOption } from '@components/common/SortSelector';
@@ -59,15 +62,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const bottomNavBarHeight = Platform.OS === 'android' ? 64 : 0;
 
   return (
-    <Modal
+    <AnimatedModal
       visible={visible}
-      transparent
-      animationType="slide"
       onRequestClose={onClose}
-      statusBarTranslucent={true}
+      overlayStyle={modalStyles.overlay}
+      contentStyle={[modalStyles.content, { paddingBottom: bottomNavBarHeight }]}
     >
-      <View style={modalStyles.overlay}>
-        <View style={[modalStyles.content, { paddingBottom: bottomNavBarHeight }]}>
+      <View style={styles.modalInner}>
           <View style={[modalStyles.header, { paddingTop: statusBarHeight + spacing.xs }]}>
             <Text style={modalStyles.headerTitle}>{t('filtersAndOptions')}</Text>
             <TouchableOpacity onPress={onClose} style={modalStyles.closeButton}>
@@ -124,12 +125,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
               ))}
             </View>
 
-            <FilterChips label={t('category')} options={categoryOptions} selectedValues={selectedCategories} onToggle={onCategoryToggle} />
+            <FilterChips label={t('category')} options={categoryOptions} selectedValues={selectedCategories} onCategoryToggle={onCategoryToggle} />
             <FilterChips label={t('rarity')} options={rarityOptions} selectedValues={selectedRarities} onToggle={onRarityToggle} />
           </ScrollView>
-        </View>
       </View>
-    </Modal>
+    </AnimatedModal>
   );
 };
 
@@ -175,14 +175,23 @@ export const InventoryScreen: React.FC = () => {
   const buttonHeight = 42;
   const buttonSize = buttonHeight;
 
-  const renderItem = ({ item }: { item: Item }) => {
+  const renderItem = ({ item, index }: { item: Item; index: number }) => {
     const handlePress = () => handleItemPress(item);
-    switch (viewMode) {
-      case 'cards': return <ItemCard item={item} onPress={handlePress} />;
-      case 'icons': return <ItemIconView item={item} onPress={handlePress} />;
-      case 'details': return <ItemDetailRow item={item} onPress={handlePress} />;
-      default: return <ItemCard item={item} onPress={handlePress} />;
-    }
+    const content =
+      viewMode === 'cards' ? (
+        <ItemCard item={item} onPress={handlePress} />
+      ) : viewMode === 'icons' ? (
+        <ItemIconView item={item} onPress={handlePress} />
+      ) : viewMode === 'details' ? (
+        <ItemDetailRow item={item} onPress={handlePress} />
+      ) : (
+        <ItemCard item={item} onPress={handlePress} />
+      );
+    return (
+      <StaggeredListItem index={index}>
+        {content}
+      </StaggeredListItem>
+    );
   };
 
   const keyExtractor = (item: Item, index: number) => `${item.market_hash_name}-${item.asset_id || index}`;
@@ -203,13 +212,12 @@ export const InventoryScreen: React.FC = () => {
       <View style={styles.headerContainer}>
         <View style={styles.toolbar}>
           <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder={t('searchItems')} style={styles.searchBar} />
-          <TouchableOpacity
+          <PressableScale
             style={[styles.filterButton, { width: buttonSize, height: buttonSize }, (hasActiveFilters || sortValue !== 'price_desc') && styles.filterButtonActive]}
             onPress={() => setIsFilterModalVisible(true)}
-            activeOpacity={0.8}
           >
             <FilterIcon size={18} color={(hasActiveFilters || sortValue !== 'price_desc') ? '#000000' : '#d4c291'} strokeWidth={2.5} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
 
@@ -273,11 +281,12 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: spacing.sm, gap: spacing.sm },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   emptyText: { color: colors.textSecondary, fontSize: 16 },
+  modalInner: { flex: 1 },
 });
 
 const modalStyles = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.85)', justifyContent: 'flex-end' },
-  content: { backgroundColor: '#1c1b19', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderTopColor: 'rgba(212, 194, 145, 0.3)', maxHeight: '90%', minHeight: '50%' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.85)', justifyContent: 'flex-end', width: '100%' },
+  content: { backgroundColor: '#1c1b19', borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderTopColor: 'rgba(212, 194, 145, 0.3)', maxHeight: '90%', minHeight: '50%', width: '100%' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.xs, borderBottomWidth: 1, borderBottomColor: 'rgba(212, 194, 145, 0.2)' },
   headerTitle: { fontSize: typography.sizes.sm, fontWeight: typography.weights.bold, color: '#FFFFFF', fontFamily: typography.fonts.primaryBold, letterSpacing: 0.5, textTransform: 'uppercase' },
   closeButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },

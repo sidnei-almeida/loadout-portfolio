@@ -14,7 +14,6 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -26,6 +25,7 @@ import {
 } from './index';
 import { CompareIcon, ArrowLeftIcon, LoadingModal } from '@components/common';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useTacticalToast } from '@contexts/TacticalToastContext';
 import { colors, spacing, typography } from '@theme';
 import {
   calculateWhatIf,
@@ -110,6 +110,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
   onClose,
 }) => {
   const { t } = useLanguage();
+  const { showWarning, showError } = useTacticalToast();
   const [analysis, setAnalysis] = useState<SnapshotAnalysis | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -134,11 +135,11 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
       setFirstSnapshot(snapshot);
     } catch (error) {
       logger.error('[MODAL] Error loading analysis:', error);
-      Alert.alert(t('error'), t('errorLoadAnalysisMessage'));
+      showError(t('errorLoadAnalysisMessage'));
     } finally {
       setIsLoadingAnalysis(false);
     }
-  }, [snapshot]);
+  }, [snapshot, showError, t]);
 
   useEffect(() => {
     if (visible && snapshot) {
@@ -156,7 +157,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
 
   const handleComparePress = () => {
     if (snapshots.length < 2) {
-      Alert.alert('Notice', 'You need at least 2 snapshots to compare.');
+      showWarning('You need at least 2 snapshots to compare.');
       return;
     }
     setComparisonMode(true);
@@ -176,7 +177,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
     if (!firstSnapshot) { return; }
 
     if (secondSnapshot.id === firstSnapshot.id) {
-      Alert.alert('Notice', 'Select a different snapshot to compare.');
+      showWarning('Select a different snapshot to compare.');
       return;
     }
 
@@ -190,7 +191,7 @@ export const SnapshotAnalysisModal: React.FC<SnapshotAnalysisModalProps> = ({
       }
     } catch (error) {
       logger.error('[MODAL] Error comparing snapshots:', error);
-      Alert.alert(t('error'), t('errorCompareMessage'));
+      showError(t('errorCompareMessage'));
       handleExitComparisonMode();
     } finally {
       setIsLoadingComparison(false);

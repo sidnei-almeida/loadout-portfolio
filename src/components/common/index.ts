@@ -1,4 +1,7 @@
 export { Loading } from './Loading';
+export { PressableScale } from './PressableScale';
+export { StaggeredListItem } from './StaggeredListItem';
+export { AnimatedModal } from './AnimatedModal';
 export { LoadingModal } from './LoadingModal';
 export { Card } from './Card';
 export { Button } from './Button';

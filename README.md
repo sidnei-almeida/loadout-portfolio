@@ -230,6 +230,51 @@ rm -rf ~/.gradle/caches/transforms-3*
 Then run the build again.
 </details>
 
+<details>
+<summary><strong>Price sync HTTP 400 / all items fail</strong></summary>
+
+The Steam price history endpoint sometimes returns 400 for all items. Common causes:
+
+1. **Expired session** — Refresh your Steam session: Profile → Update Session (or sign in again).
+2. **Steam blocking** — Steam may reject non-browser requests. Try again later; avoid rapid retries.
+3. **Cooldown** — The app enforces a 15-minute cooldown after a price sync. Wait before trying again.
+</details>
+
+<details>
+<summary><strong>Storage Unit not appearing after purchase</strong></summary>
+
+Storage Units bought in-game may take a few minutes to appear in the Steam inventory API. Try syncing again after 5–10 minutes. The app fetches both context 2 (main backpack) and context 6 (extras) for CS2.
+</details>
+
+<details>
+<summary><strong>packageDebug FAILED / IncrementalSplitterRunnable</strong></summary>
+
+Build compiles but fails on `packageDebug` with a generic "IncrementalSplitterRunnable" error. Often caused by OOM or corrupted incremental state.
+
+1. **Clean and retry:**
+   ```bash
+   cd android && ./gradlew clean && cd ..
+   npx react-native run-android
+   ```
+
+2. **Increase Gradle memory** in `android/gradle.properties`:
+   ```properties
+   org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m
+   ```
+   Then kill the Gradle daemon and rebuild:
+   ```bash
+   cd android && ./gradlew --stop && cd ..
+   npx react-native run-android
+   ```
+
+3. **Build from android/ directory** (sometimes succeeds when CLI fails):
+   ```bash
+   cd android && ./gradlew assembleDebug && cd ..
+   adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+   ```
+   Then start Metro (`npm start`) and open the app on the device.
+</details>
+
 ---
 
 ## 🌐 Environment (development)

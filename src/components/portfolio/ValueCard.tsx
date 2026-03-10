@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { PressableScale } from '@components/common/PressableScale';
 import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
 
@@ -228,7 +229,7 @@ export const ValueCard: React.FC<ValueCardProps> = ({
     <View style={styles.card}>
       {/* Refresh Button */}
       {onRefresh && (
-        <TouchableOpacity
+        <PressableScale
           onPress={onRefresh}
           disabled={isLoading}
           style={styles.refreshButton}
@@ -244,7 +245,7 @@ export const ValueCard: React.FC<ValueCardProps> = ({
               strokeWidth={2} 
             />
           </Animated.View>
-        </TouchableOpacity>
+        </PressableScale>
       )}
 
       {/* Header */}

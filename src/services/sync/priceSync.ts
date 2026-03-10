@@ -62,8 +62,13 @@ export async function syncPrices(
   const { sessionId, steamLoginSecure } = await extractCookies();
   const cookieHeader = `sessionid=${sessionId}; steamLoginSecure=${steamLoginSecure}`;
 
+  // Storage Units have no market listing — Steam returns 500 for price history. Skip them.
+  const namesToSync = marketHashNames.filter(
+    name => !name?.toLowerCase().includes('storage unit'),
+  );
+
   const result: PriceSyncResult = {
-    total: marketHashNames.length,
+    total: namesToSync.length,
     success: 0,
     failed: 0,
     pointsInserted: 0,
@@ -71,9 +76,9 @@ export async function syncPrices(
 
   const latestPrices: Array<{ market_hash_name: string; price: number }> = [];
 
-  for (let i = 0; i < marketHashNames.length; i++) {
-    const name = marketHashNames[i];
-    onProgress?.(i + 1, marketHashNames.length);
+  for (let i = 0; i < namesToSync.length; i++) {
+    const name = namesToSync[i];
+    onProgress?.(i + 1, namesToSync.length);
 
     try {
       const points = await fetchPriceHistory(name, cookieHeader);
@@ -91,9 +96,9 @@ export async function syncPrices(
     } catch (err: any) {
       if (err?.message?.includes('429')) {
         logger.warn(
-          `[priceSync] HTTP 429 at item ${i + 1}/${marketHashNames.length}. Stopping batch.`,
+          `[priceSync] HTTP 429 at item ${i + 1}/${namesToSync.length}. Stopping batch.`,
         );
-        result.failed += marketHashNames.length - i;
+        result.failed += namesToSync.length - i;
         break;
       }
       logger.warn(`[priceSync] Failed for "${name}":`, err?.message);
@@ -101,7 +106,7 @@ export async function syncPrices(
     }
 
     // Delay between items (skip after the last one)
-    if (i < marketHashNames.length - 1) {
+    if (i < namesToSync.length - 1) {
       await sleep(INTER_REQUEST_DELAY_MS);
     }
   }
@@ -150,12 +155,19 @@ async function fetchPriceHistory(
       Cookie: cookieHeader,
       'User-Agent': USER_AGENT,
       Accept: 'application/json, text/javascript, */*; q=0.01',
+      'Accept-Language': 'en-US,en;q=0.9',
       Referer: 'https://steamcommunity.com/market/',
+      'Sec-Fetch-Dest': 'empty',
+      'Sec-Fetch-Mode': 'cors',
     },
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status} for ${marketHashName}`);
+    const body = await response.text().catch(() => '');
+    const hint = response.status === 400
+      ? ' Session/cookies may be expired or Steam is rejecting the request.'
+      : '';
+    throw new Error(`HTTP ${response.status} for ${marketHashName}.${hint}`);
   }
 
   const data = await response.json();

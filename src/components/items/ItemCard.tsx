@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { TouchableOpacity } from 'react-native';
+import { PressableScale } from '@components/common/PressableScale';
 import FastImage from 'react-native-fast-image';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
@@ -77,17 +77,16 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   const cardHeight = cardWidth * 1.4; // Aspect ratio retrato (~1.4:1)
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={[
         styles.card,
-        { 
+        {
           width: cardWidth,
           height: cardHeight,
-          borderColor: 'rgba(212, 194, 145, 0.3)', // Borda dourada tactical gold
+          borderColor: 'rgba(212, 194, 145, 0.3)',
         },
       ]}
       onPress={onPress}
-      activeOpacity={0.8}
     >
       {/* Badge de Preço - Topo Direito (ou [ XX ITEMS ] para Storage Unit) */}
       {isStorageUnit ? (
@@ -167,7 +166,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
           <Text style={styles.quantity}>x{item.quantity}</Text>
         )}
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 };
 

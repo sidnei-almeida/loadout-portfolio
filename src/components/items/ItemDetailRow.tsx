@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '@components/common/PressableScale';
 import FastImage from 'react-native-fast-image';
 import { useLanguage } from '@contexts/LanguageContext';
 import { colors, spacing, typography } from '@theme';
@@ -72,10 +73,9 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
     : weapon;
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.7}
     >
       {/* Borda vertical de raridade */}
       <View style={[styles.rarityBorder, { backgroundColor: rarityColor }]} />
@@ -160,7 +160,7 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
           </>
         )}
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 };
 

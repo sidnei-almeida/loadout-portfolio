@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '@components/common/PressableScale';
 import FastImage from 'react-native-fast-image';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
@@ -67,10 +68,9 @@ export const ItemIconView: React.FC<ItemIconViewProps> = ({ item, onPress }) => 
     : weapon;
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.8}
     >
       {/* Imagem com nome da arma no topo */}
       <View style={styles.imageContainer}>
@@ -116,7 +116,7 @@ export const ItemIconView: React.FC<ItemIconViewProps> = ({ item, onPress }) => 
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 };
 

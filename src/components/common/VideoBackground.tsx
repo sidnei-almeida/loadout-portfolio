@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, InteractionManager, Platform } from 'react-native';
+import { View, StyleSheet, Dimensions, Platform } from 'react-native';
 import { logger } from '@utils/logger';
 
 /**
@@ -41,13 +41,25 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
   useEffect(() => {
+    let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const task = InteractionManager.runAfterInteractions(() => {
+    const runAfterIdle = () => {
+      if (cancelled) return;
       const delay = Platform.OS === 'android' ? 350 : 150;
-      timeoutId = setTimeout(() => setMountReady(true), delay);
-    });
+      timeoutId = setTimeout(() => {
+        if (!cancelled) setMountReady(true);
+      }, delay);
+    };
+    const idleId = typeof requestIdleCallback !== 'undefined'
+      ? requestIdleCallback(runAfterIdle, { timeout: 500 })
+      : setTimeout(runAfterIdle, 0);
     return () => {
-      task.cancel();
+      cancelled = true;
+      if (typeof requestIdleCallback !== 'undefined') {
+        cancelIdleCallback(idleId as number);
+      } else {
+        clearTimeout(idleId);
+      }
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);

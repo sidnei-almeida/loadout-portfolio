@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { PressableScale } from '@components/common/PressableScale';
 import CookieManager from '@react-native-cookies/cookies';
 import { Card } from '@components/common/Card';
 import { Loading } from '@components/common/Loading';
@@ -59,11 +60,11 @@ export const CookieStatus: React.FC<CookieStatusProps> = ({ onCapturePress, refr
 
       <Text style={styles.explanation}>{t('sessionExplanation')}</Text>
 
-      <TouchableOpacity style={styles.button} onPress={onCapturePress} activeOpacity={0.7}>
+      <PressableScale style={styles.button} onPress={onCapturePress}>
         <Text style={styles.buttonText}>
           {hasCookies ? t('refreshSession') : t('updateSession')}
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </Card>
   );
 };

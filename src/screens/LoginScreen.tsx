@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@components/common/Screen';
 import { SteamButton } from '@components/auth/SteamButton';
@@ -7,6 +7,7 @@ import { SteamLoginModal } from '@components/auth/SteamLoginModal';
 import { TermsModal } from '@components/auth/TermsModal';
 import { LegalFooter } from '@components/common/LegalFooter';
 import { useAuth } from '@hooks/useAuth';
+import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import { colors, spacing, typography } from '@theme';
 import { logger } from '@utils/logger';
 import { storage } from '@services/storage';
@@ -27,6 +28,7 @@ const PROFILE_QUERY_KEY = ['profile-card'] as const;
 
 export const LoginScreen: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showAlert, AlertDialog } = useCustomAlert();
   const {
     login,
     setPostLoginSyncing,
@@ -49,10 +51,7 @@ export const LoginScreen: React.FC = () => {
       const savedCookies = storage.getSteamCookies();
       if (!savedCookies?.sessionId || !savedCookies?.steamLoginSecure) {
         logger.error('[LOGIN] Steam cookies not found in MMKV after WebView login');
-        Alert.alert(
-          'Session Error',
-          'Steam cookies were not captured. Please try signing in again.',
-        );
+        showAlert('Session Error', 'Steam cookies were not captured. Please try signing in again.', 'error');
         setPostLoginSyncing(false);
         setIsLoading(false);
         return;
@@ -139,19 +138,13 @@ export const LoginScreen: React.FC = () => {
       // Show sync issues to user (non-blocking)
       if (syncErrors.length > 0) {
         setTimeout(() => {
-          Alert.alert(
-            'Sync Issues',
-            'Some data could not be synced:\n\n' + syncErrors.join('\n'),
-            [{ text: 'OK' }],
-          );
+          showAlert('Sync Issues', 'Some data could not be synced:\n\n' + syncErrors.join('\n'), 'warning');
         }, 2000);
       }
 
     } catch (error) {
       logger.error('[LOGIN] Error:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.', [
-        { text: 'OK' },
-      ]);
+      showAlert('Error', 'An unexpected error occurred. Please try again.', 'error');
       setPostLoginSyncing(false);
     } finally {
       setIsLoading(false);
@@ -159,7 +152,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <Screen style={styles.container} showPremiumBackground={false}>
+    <Screen style={styles.container}>
       <View style={styles.content}>
         <View style={styles.topSection}>
           <Text style={styles.loadoutText}>LOADOUT</Text>
@@ -193,6 +186,7 @@ export const LoginScreen: React.FC = () => {
         onSuccess={handleLoginSuccess}
       />
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} />
+      <AlertDialog />
     </Screen>
   );
 };

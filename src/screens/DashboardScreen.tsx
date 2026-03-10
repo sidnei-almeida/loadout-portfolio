@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { StyleSheet, Alert, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@components/common/Screen';
 import { Loading } from '@components/common/Loading';
@@ -10,6 +10,7 @@ import { usePortfolio } from '@hooks/usePortfolio';
 import { usePortfolioHistory } from '@hooks/usePortfolioHistory';
 import { useAuth } from '@hooks/useAuth';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useTacticalToast } from '@contexts/TacticalToastContext';
 import { spacing, typography } from '@theme';
 import { logger } from '@utils/logger';
 import { syncInventory, syncPrices, syncProfile } from '@services/sync';
@@ -31,6 +32,7 @@ interface RefreshStep {
 
 export const DashboardScreen: React.FC = () => {
   const { t } = useLanguage();
+  const { showCooldown, showError } = useTacticalToast();
   const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState(30);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -100,7 +102,7 @@ export const DashboardScreen: React.FC = () => {
         await syncInventory(steamId);
       } catch (err: any) {
         if (err?.message?.startsWith('COOLDOWN:')) {
-          Alert.alert(t('cooldown'), err.message.replace('COOLDOWN:', ''));
+          showCooldown(err.message);
           setIsRefreshing(false);
           resetSteps();
           return;
@@ -118,7 +120,9 @@ export const DashboardScreen: React.FC = () => {
           await syncPrices(names);
         }
       } catch (err: any) {
-        if (!err?.message?.startsWith('COOLDOWN:')) {
+        if (err?.message?.startsWith('COOLDOWN:')) {
+          showCooldown(err.message);
+        } else {
           logger.warn('[Dashboard] Price sync failed:', err?.message);
         }
       }
@@ -130,7 +134,9 @@ export const DashboardScreen: React.FC = () => {
         await syncProfile(steamId);
         queryClient.invalidateQueries({ queryKey: [...PROFILE_QUERY_KEY] });
       } catch (err: any) {
-        if (!err?.message?.startsWith('COOLDOWN:')) {
+        if (err?.message?.startsWith('COOLDOWN:')) {
+          showCooldown(err.message);
+        } else {
           logger.warn('[Dashboard] Profile sync failed:', err?.message);
         }
       }
@@ -177,7 +183,7 @@ export const DashboardScreen: React.FC = () => {
       logger.error('[Dashboard] Refresh failed:', error);
       setIsRefreshing(false);
       resetSteps();
-      Alert.alert(t('error'), t('errorUpdateData'));
+      showError(t('errorUpdateData'));
     }
   };
 
@@ -193,7 +199,7 @@ export const DashboardScreen: React.FC = () => {
 
   if (isLoading && items.length === 0) {
     return (
-      <Screen showPremiumBackground={false}>
+      <Screen>
         <Loading fullScreen message={t('loadingPortfolio')} />
       </Screen>
     );
@@ -205,7 +211,7 @@ export const DashboardScreen: React.FC = () => {
   if (!isLoading && items.length === 0 && !isRefreshing) {
     return (
       <View style={styles.screenContainer}>
-        <Screen style={styles.scrollContent} showPremiumBackground={false}>
+        <Screen style={styles.scrollContent}>
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyTitle}>{t('noInventoryData')}</Text>
             <Text style={styles.emptySubtitle}>{t('noInventorySubtitle')}</Text>
@@ -231,7 +237,7 @@ export const DashboardScreen: React.FC = () => {
 
   return (
     <View style={styles.screenContainer}>
-      <Screen scrollable style={styles.scrollContent} showPremiumBackground={false}>
+      <Screen scrollable style={styles.scrollContent}>
         <ValueCard
           totalValue={Number(totalValue) || 0}
           change={valueChange}

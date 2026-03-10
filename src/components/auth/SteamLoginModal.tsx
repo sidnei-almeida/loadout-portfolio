@@ -17,13 +17,13 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Animated,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 import CookieManager from '@react-native-cookies/cookies';
 import { useLanguage } from '@contexts/LanguageContext';
+import { useCustomAlert } from '@components/common/CustomAlertDialog';
 import { colors, spacing, typography } from '@theme';
 import { storage } from '@services/storage';
 import { logger } from '@utils/logger';
@@ -50,6 +50,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useLanguage();
+  const { showAlert, AlertDialog } = useCustomAlert();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
@@ -128,7 +129,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
             await finishLogin(profileMatch[1]);
             return;
           }
-          Alert.alert(t('error'), t('errorDetectSteamId'));
+          showAlert(t('error'), t('errorDetectSteamId'), 'error');
           processedRef.current = false;
           setIsProcessing(false);
           return;
@@ -137,7 +138,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
         await finishLogin(steamId);
       } catch (error) {
         logger.error('[AUTH] Error processing login:', error);
-        Alert.alert(t('error'), t('sessionErrorCapture'));
+        showAlert(t('error'), t('sessionErrorCapture'), 'error');
         processedRef.current = false;
         setIsProcessing(false);
       }
@@ -189,7 +190,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
 
   const handleClose = () => {
     if (isProcessing) {
-      Alert.alert(t('pleaseWait'), t('pleaseWaitMessage'));
+      showAlert(t('pleaseWait'), t('pleaseWaitMessage'), 'info');
       return;
     }
     onClose();
@@ -255,6 +256,7 @@ export const SteamLoginModal: React.FC<SteamLoginModalProps> = ({
           </View>
         )}
       </View>
+      <AlertDialog />
     </Modal>
   );
 };

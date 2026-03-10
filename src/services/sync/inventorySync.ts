@@ -162,19 +162,23 @@ export async function syncInventory(steamId: string): Promise<InventorySyncResul
 
   logger.log(`[inventorySync] Cookie header length: ${cookieHeader.length}, sessionId length: ${sessionId.length}`);
 
-  // ---- 3. Paginated fetch ----
+  // ---- 3. Paginated fetch (context 2 = main backpack; 6 = some games use for extras) ----
   const allAssets: SteamAsset[] = [];
   const allDescriptions: SteamDescription[] = [];
-  let startAssetId: string | null = null;
-  let page = 0;
+  const contextsToFetch = [2, 6];
+  let totalPages = 0;
 
-  while (true) {
-    page++;
-    const url = buildInventoryUrl(steamId, startAssetId);
+  for (const contextId of contextsToFetch) {
+    let startAssetId: string | null = null;
+    let page = 0;
 
-    logger.log(`[inventorySync] Fetching: ${url.substring(0, 80)}...`);
+    while (true) {
+      page++;
+      const url = buildInventoryUrl(steamId, contextId, startAssetId);
 
-    const response = await fetch(url, {
+      logger.log(`[inventorySync] Fetching context ${contextId}: ${url.substring(0, 80)}...`);
+
+      const response = await fetch(url, {
       method: 'GET',
       headers: {
         Cookie: cookieHeader,
@@ -192,6 +196,10 @@ export async function syncInventory(steamId: string): Promise<InventorySyncResul
       }
       if (response.status === 429) {
         throw new Error('Steam rate limit reached. Please wait a few minutes.');
+      }
+      if (response.status === 404 && contextId !== 2) {
+        logger.log(`[inventorySync] Context ${contextId} not used for this app, skipping.`);
+        break;
       }
       const body = await response.text().catch(() => '');
       logger.error(`[inventorySync] Error body: ${body.substring(0, 200)}`);
@@ -211,17 +219,19 @@ export async function syncInventory(steamId: string): Promise<InventorySyncResul
     if (data.descriptions) { allDescriptions.push(...data.descriptions); }
 
     logger.log(
-      `[inventorySync] Page ${page}: +${data.assets?.length ?? 0} assets, ` +
+      `[inventorySync] Context ${contextId} page ${page}: +${data.assets?.length ?? 0} assets, ` +
       `total so far: ${allAssets.length}`,
     );
 
-    const hasMore = data.more_items === 1 || data.more_items === true;
-    if (hasMore && data.last_assetid) {
-      startAssetId = data.last_assetid;
-      await sleep(PAGE_DELAY_MS);
-    } else {
-      break;
+      const hasMore = data.more_items === 1 || data.more_items === true;
+      if (hasMore && data.last_assetid) {
+        startAssetId = data.last_assetid;
+        await sleep(PAGE_DELAY_MS);
+      } else {
+        break;
+      }
     }
+    totalPages += page;
   }
 
   if (allAssets.length === 0) {
@@ -244,13 +254,13 @@ export async function syncInventory(steamId: string): Promise<InventorySyncResul
   }
 
   logger.log(
-    `[inventorySync] Done: ${synced} items, ${catalogEntries.length} catalog entries, ${page} pages`,
+    `[inventorySync] Done: ${synced} items, ${catalogEntries.length} catalog entries, ${totalPages} pages`,
   );
 
   return {
     itemsSynced: synced,
     uniqueSkins: catalogEntries.length,
-    pages: page,
+    pages: totalPages,
   };
 }
 
@@ -371,10 +381,10 @@ function mergeAssetsAndDescriptions(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildInventoryUrl(steamId: string, startAssetId: string | null): string {
+function buildInventoryUrl(steamId: string, contextId: number, startAssetId: string | null): string {
   const ts = Date.now();
   let url =
-    `https://steamcommunity.com/inventory/${steamId}/730/2` +
+    `https://steamcommunity.com/inventory/${steamId}/730/${contextId}` +
     `?l=english&count=${ITEMS_PER_PAGE}&include_properties=1&_=${ts}`;
   if (startAssetId) {
     url += `&start_assetid=${startAssetId}`;

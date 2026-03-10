@@ -1,14 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
-  Animated,
   ActivityIndicator,
 } from 'react-native';
 import { useLanguage } from '@contexts/LanguageContext';
 import { spacing, typography } from '@theme';
+import { AnimatedModal } from './AnimatedModal';
 
 // Helper para garantir valores seguros
 const safeTypography = typography || {
@@ -38,29 +37,6 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
   onComplete,
 }) => {
   const { t } = useLanguage();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      fadeAnim.setValue(0);
-      scaleAnim.setValue(0.9);
-    }
-  }, [visible, fadeAnim, scaleAnim]);
 
   // Verificar se todas as etapas foram concluídas
   const allCompleted = steps.every(step => step.status === 'completed');
@@ -109,55 +85,30 @@ export const RefreshProgressModal: React.FC<RefreshProgressModalProps> = ({
   };
 
   return (
-    <Modal
+    <AnimatedModal
       visible={visible}
-      transparent
-      animationType="none"
+      overlayStyle={styles.overlay}
+      contentStyle={styles.container}
       statusBarTranslucent
     >
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>{t('updatingData')}</Text>
-          </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('updatingData')}</Text>
+      </View>
 
-          {/* Steps */}
-          <View style={styles.stepsContainer}>
-            {steps.map((step) => renderStep(step))}
-          </View>
+      {/* Steps */}
+      <View style={styles.stepsContainer}>
+        {steps.map((step) => renderStep(step))}
+      </View>
 
-          {/* Footer - Mostrar "Tudo pronto" quando concluído */}
-          {allCompleted && !isProcessing && (
-            <Animated.View
-              style={[
-                styles.footer,
-                {
-                  opacity: fadeAnim,
-                },
-              ]}
-            >
-              <Text style={styles.footerDot}>•</Text>
-              <Text style={styles.completeMessage}>{t('allDone')}</Text>
-            </Animated.View>
-          )}
-        </Animated.View>
-      </Animated.View>
-    </Modal>
+      {/* Footer - Mostrar "Tudo pronto" quando concluído */}
+      {allCompleted && !isProcessing && (
+        <View style={styles.footer}>
+          <Text style={styles.footerDot}>•</Text>
+          <Text style={styles.completeMessage}>{t('allDone')}</Text>
+        </View>
+      )}
+    </AnimatedModal>
   );
 };
 

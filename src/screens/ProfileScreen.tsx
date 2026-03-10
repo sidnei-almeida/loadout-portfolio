@@ -59,14 +59,14 @@ export const ProfileScreen: React.FC = () => {
 
   if (isLoading && !profileCard) {
     return (
-      <Screen showPremiumBackground={false}>
+      <Screen>
         <Loading fullScreen message={t('profileLoading')} />
       </Screen>
     );
   }
 
   return (
-    <Screen scrollable={false} style={styles.container} showPremiumBackground={false}>
+    <Screen scrollable={false} style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[

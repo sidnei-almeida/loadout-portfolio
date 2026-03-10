@@ -104,7 +104,7 @@ export const SimulatorScreen: React.FC = () => {
   }, [isAuthenticated, snapshots, deleteSnapshot, showAlert]);
 
   return (
-    <Screen showPremiumBackground={false}>
+    <Screen>
       <View style={styles.container}>
         <View style={styles.content}>
           <View style={[styles.listHeader, { paddingTop: statusBarHeight + spacing.md }]}>
