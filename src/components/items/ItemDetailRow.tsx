@@ -65,7 +65,11 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
   const rarityColor = getRarityColor(item.rarity_tag || item.rarity || item.market_hash_name);
   const totalValue = (item.price || item.current_price || 0) * (item.quantity || 1);
   const unitPrice = item.price || item.current_price || 0;
+  const isStorageUnit = item.is_storage_unit === true;
   const { weapon, skin, condition } = parseItemName(item.market_hash_name || '');
+  const displayTitle = isStorageUnit
+    ? (item.custom_display_name ?? item.market_hash_name ?? 'Storage Unit')
+    : weapon;
 
   return (
     <TouchableOpacity
@@ -97,9 +101,9 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
         <View style={styles.nameRow}>
           <View style={styles.weaponSkinRow}>
             <Text style={styles.weaponName} numberOfLines={1}>
-              {weapon}
+              {displayTitle}
             </Text>
-            {skin && (
+            {!isStorageUnit && skin && (
               <>
                 <Text style={styles.skinSeparator}> • </Text>
                 <Text style={styles.skinName} numberOfLines={1}>
@@ -108,40 +112,52 @@ export const ItemDetailRow: React.FC<ItemDetailRowProps> = ({ item, onPress }) =
               </>
             )}
           </View>
-          {item.is_stattrak && (
+          {!isStorageUnit && item.is_stattrak && (
             <View style={styles.stattrakBadge}>
               <Text style={styles.stattrakText}>ST</Text>
             </View>
           )}
         </View>
-        
-        {/* Linha 2: Wear + Quantidade */}
+
+        {/* Linha 2: Wear + Quantidade (ou ENCRYPTED VAULT para Storage Unit) */}
         <View style={styles.metadataRow}>
-          {condition && (
-            <Text style={styles.condition}>{CONDITION_TO_KEY[condition] ? t(CONDITION_TO_KEY[condition]) : condition}</Text>
-          )}
-          {item.quantity > 1 && (
+          {isStorageUnit ? (
+            <Text style={styles.encryptedVaultSubtitle}>{t('storageUnitEncryptedVault')}</Text>
+          ) : (
             <>
-              {condition && <Text style={styles.metadataSeparator}> • </Text>}
-              <Text style={styles.quantity}>{t('quantityShort')}: {item.quantity}</Text>
+              {condition && (
+                <Text style={styles.condition}>{CONDITION_TO_KEY[condition] ? t(CONDITION_TO_KEY[condition]) : condition}</Text>
+              )}
+              {item.quantity > 1 && (
+                <>
+                  {condition && <Text style={styles.metadataSeparator}> • </Text>}
+                  <Text style={styles.quantity}>{t('quantityShort')}: {item.quantity}</Text>
+                </>
+              )}
             </>
           )}
         </View>
       </View>
 
-      {/* Coluna Direita: Valores e Float */}
+      {/* Coluna Direita: Valores e Float (ou [ XX ITEMS ] para Storage Unit) */}
       <View style={styles.valueContainer}>
-        {/* Preço Total */}
-        <Text style={styles.totalPrice}>{formatCurrency(totalValue)}</Text>
-        
-        {/* Preço Unitário (se quantidade > 1) */}
-        {item.quantity > 1 && (
-          <Text style={styles.unitPrice}>{formatCurrency(unitPrice)} {t('perUnit')}</Text>
-        )}
-        
-        {/* Float abaixo do preço */}
-        {item.float_value !== null && item.float_value !== undefined && (
-          <Text style={styles.floatValue}>{t('floatShort')}: {item.float_value.toFixed(4)}</Text>
+        {isStorageUnit ? (
+          <Text style={styles.storageUnitCountText}>
+            [ {item.storage_unit_item_count ?? '?'} {t('storageUnitItems')} ]
+          </Text>
+        ) : (
+          <>
+            {/* Preço Total */}
+            <Text style={styles.totalPrice}>{formatCurrency(totalValue)}</Text>
+            {/* Preço Unitário (se quantidade > 1) */}
+            {item.quantity > 1 && (
+              <Text style={styles.unitPrice}>{formatCurrency(unitPrice)} {t('perUnit')}</Text>
+            )}
+            {/* Float abaixo do preço */}
+            {item.float_value != null && (
+              <Text style={styles.floatValue}>{t('floatShort')}: {item.float_value.toFixed(4)}</Text>
+            )}
+          </>
         )}
       </View>
     </TouchableOpacity>
@@ -281,6 +297,19 @@ const styles = StyleSheet.create({
     fontSize: safeTypography.sizes.xs,
     fontFamily: safeTypography.fonts.secondary,
     color: safeColors.textMuted,
+  },
+  storageUnitCountText: {
+    fontSize: safeTypography.sizes.md,
+    fontFamily: safeTypography.fonts.monoRegular ?? safeTypography.fonts.mono ?? 'JetBrainsMono-Regular',
+    color: '#d4c291',
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  encryptedVaultSubtitle: {
+    fontSize: safeTypography.sizes.xs,
+    fontFamily: safeTypography.fonts.secondary,
+    color: 'rgba(180, 180, 180, 0.85)',
+    letterSpacing: 1.5,
   },
 });
 

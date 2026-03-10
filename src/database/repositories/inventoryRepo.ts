@@ -25,9 +25,12 @@ export interface InventoryItemInput {
   paint_seed?: number | null;
   is_stattrak?: boolean;
   inspect_link?: string | null;
+  is_storage_unit?: boolean;
+  storage_unit_item_count?: number | null;
+  custom_display_name?: string | null;
 }
 
-/** Aggregated row returned by `getInventory()` — one per skin name. */
+/** Aggregated row returned by `getInventory()` — one per skin name (or per Storage Unit). */
 export interface InventoryGroupedRow {
   market_hash_name: string;
   quantity: number;
@@ -37,6 +40,10 @@ export interface InventoryGroupedRow {
   rarity_color: string;
   category: string;
   is_stattrak: number;
+  asset_id?: string;
+  is_storage_unit?: number;
+  storage_unit_item_count?: number | null;
+  custom_display_name?: string | null;
 }
 
 /** Raw individual item returned by `getItemsByMarketName()`. */
@@ -73,8 +80,9 @@ export function replaceInventory(items: InventoryItemInput[]): number {
     for (const item of items) {
       db.executeSync(
         `INSERT INTO inventory_items
-           (id, asset_id, market_hash_name, float_value, paint_seed, is_stattrak, inspect_link)
-         VALUES (?, ?, ?, ?, ?, ?, ?);`,
+           (id, asset_id, market_hash_name, float_value, paint_seed, is_stattrak, inspect_link,
+            is_storage_unit, storage_unit_item_count, custom_display_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           generateId(),
           item.asset_id,
@@ -83,6 +91,9 @@ export function replaceInventory(items: InventoryItemInput[]): number {
           item.paint_seed ?? null,
           item.is_stattrak ? 1 : 0,
           item.inspect_link ?? null,
+          item.is_storage_unit ? 1 : 0,
+          item.storage_unit_item_count ?? null,
+          item.custom_display_name ?? null,
         ],
       );
     }
@@ -115,11 +126,16 @@ export function getInventory(): InventoryGroupedRow[] {
         COALESCE(c.image_url_hd, '')         AS image_url_hd,
         COALESCE(c.rarity_color, '')         AS rarity_color,
         COALESCE(c.category, 'Other')        AS category,
-        MAX(i.is_stattrak)                   AS is_stattrak
+        MAX(i.is_stattrak)                   AS is_stattrak,
+        MAX(i.asset_id)                     AS asset_id,
+        MAX(i.is_storage_unit)               AS is_storage_unit,
+        MAX(i.storage_unit_item_count)       AS storage_unit_item_count,
+        MAX(i.custom_display_name)           AS custom_display_name
       FROM inventory_items i
       LEFT JOIN skin_catalog c
         ON i.market_hash_name = c.market_hash_name
-      GROUP BY i.market_hash_name
+      GROUP BY i.market_hash_name,
+               COALESCE(CASE WHEN i.is_storage_unit = 1 THEN i.asset_id END, '')
       ORDER BY (COUNT(*) * COALESCE(c.current_price, 0)) DESC;
     `);
     return (result.rows as InventoryGroupedRow[]) ?? [];

@@ -34,6 +34,10 @@ function toItem(row: InventoryGroupedRow): Item {
     is_stattrak: row.is_stattrak === 1,
     rarity: row.rarity_color || undefined,
     category: row.category || undefined,
+    asset_id: row.asset_id ?? undefined,
+    is_storage_unit: row.is_storage_unit === 1,
+    storage_unit_item_count: row.storage_unit_item_count ?? undefined,
+    custom_display_name: row.custom_display_name ?? undefined,
   };
 }
 

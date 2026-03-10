@@ -215,6 +215,9 @@ export const translations = {
     top5Valuable: 'TOP 5 MOST VALUABLE SKINS',
     item: 'item',
     items: 'items',
+    storageUnitEncrypted: 'ENCRYPTED',
+    storageUnitEncryptedVault: 'ENCRYPTED VAULT',
+    storageUnitItems: 'ITEMS',
     seeAllInInventory: 'See all details and items in the Inventory tab.',
     evolutionAvailableTomorrow: 'Evolution analysis available from tomorrow.',
 
@@ -466,6 +469,9 @@ export const translations = {
     top5Valuable: 'TOP 5 SKINS MAIS VALIOSAS',
     item: 'item',
     items: 'itens',
+    storageUnitEncrypted: 'ENCRYPTADO',
+    storageUnitEncryptedVault: 'VAULT ENCRIPTADA',
+    storageUnitItems: 'ITENS',
     seeAllInInventory: 'Veja todos os detalhes e itens na aba Inventário.',
     evolutionAvailableTomorrow: 'Análise de evolução disponível a partir de amanhã.',
 
@@ -713,6 +719,9 @@ export const translations = {
     top5Valuable: 'TOP 5 SKINS MÁS VALIOSAS',
     item: 'elemento',
     items: 'elementos',
+    storageUnitEncrypted: 'ENCRIPTADO',
+    storageUnitEncryptedVault: 'BÓVEDA ENCRIPTADA',
+    storageUnitItems: 'ARTÍCULOS',
     seeAllInInventory: 'Ver todos los detalles y elementos en la pestaña Inventario.',
     evolutionAvailableTomorrow: 'Análisis de evolución disponible a partir de mañana.',
 

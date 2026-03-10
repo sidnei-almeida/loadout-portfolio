@@ -11,7 +11,14 @@
 
 export const DB_NAME = 'loadout.db';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+// Migration v1 → v2: Storage Unit support (is_storage_unit, storage_unit_item_count, custom_display_name)
+export const MIGRATION_V1_TO_V2: string[] = [
+  'ALTER TABLE inventory_items ADD COLUMN is_storage_unit INTEGER NOT NULL DEFAULT 0;',
+  'ALTER TABLE inventory_items ADD COLUMN storage_unit_item_count INTEGER;',
+  'ALTER TABLE inventory_items ADD COLUMN custom_display_name TEXT;',
+];
 
 // ---------------------------------------------------------------------------
 // Table: skin_catalog
@@ -40,14 +47,17 @@ CREATE TABLE IF NOT EXISTS skin_catalog (
 // ---------------------------------------------------------------------------
 const CREATE_INVENTORY_ITEMS = `
 CREATE TABLE IF NOT EXISTS inventory_items (
-  id                TEXT    PRIMARY KEY,
-  asset_id          TEXT    NOT NULL,
-  market_hash_name  TEXT    NOT NULL,
-  float_value       REAL,
-  paint_seed        INTEGER,
-  is_stattrak       INTEGER NOT NULL DEFAULT 0,
-  acquired_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-  inspect_link      TEXT,
+  id                        TEXT    PRIMARY KEY,
+  asset_id                  TEXT    NOT NULL,
+  market_hash_name          TEXT    NOT NULL,
+  float_value               REAL,
+  paint_seed                INTEGER,
+  is_stattrak               INTEGER NOT NULL DEFAULT 0,
+  acquired_at               TEXT    NOT NULL DEFAULT (datetime('now')),
+  inspect_link              TEXT,
+  is_storage_unit           INTEGER NOT NULL DEFAULT 0,
+  storage_unit_item_count   INTEGER,
+  custom_display_name      TEXT,
 
   FOREIGN KEY (market_hash_name) REFERENCES skin_catalog(market_hash_name)
     ON DELETE SET NULL

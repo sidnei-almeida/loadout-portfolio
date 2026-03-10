@@ -6,6 +6,7 @@ import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { getRarityColor } from '@utils/rarity';
 import { ImagePlaceholderIcon } from '@components/common/ImagePlaceholderIcon';
+import { useLanguage } from '@contexts/LanguageContext';
 import type { Item } from '@types/item';
 
 interface ItemCardProps {
@@ -14,7 +15,10 @@ interface ItemCardProps {
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
+  const { t } = useLanguage();
   const rarityColor = getRarityColor(item.rarity_tag || item.rarity || item.market_hash_name);
+  const isStorageUnit = item.is_storage_unit === true;
+
   const totalValue = (item.price || item.current_price || 0) * (item.quantity || 1);
 
   // Parse market_hash_name to separate weapon name, skin, and condition
@@ -59,7 +63,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   };
 
   const { weapon, skin, condition } = parseItemName(item.market_hash_name || '');
-  
+  const displayTitle = isStorageUnit
+    ? (item.custom_display_name ?? item.market_hash_name ?? 'Storage Unit')
+    : weapon;
+
   // Calcular largura e altura do card baseado na largura da tela (2 colunas com gap)
   // Para manter aspect ratio retrato ~1.4:1, calculamos altura baseado na largura disponível
   const screenWidth = Dimensions.get('window').width;
@@ -82,15 +89,23 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {/* Badge de Preço - Topo Direito */}
-      <View style={styles.priceBadge}>
-        <Text style={styles.priceBadgeText}>
-          {formatCurrency(totalValue)}
-        </Text>
-      </View>
+      {/* Badge de Preço - Topo Direito (ou [ XX ITEMS ] para Storage Unit) */}
+      {isStorageUnit ? (
+        <View style={styles.storageUnitCountBadge}>
+          <Text style={styles.storageUnitCountText}>
+            [ {item.storage_unit_item_count ?? '?'} {t('storageUnitItems')} ]
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.priceBadge}>
+          <Text style={styles.priceBadgeText}>
+            {formatCurrency(totalValue)}
+          </Text>
+        </View>
+      )}
 
-      {/* Badge de Float - Topo Esquerdo */}
-      {item.float_value !== null && item.float_value !== undefined && (
+      {/* Badge de Float - Topo Esquerdo (omit for Storage Units) */}
+      {!isStorageUnit && item.float_value != null && (
         <View style={styles.floatBadge}>
           <Text style={styles.floatBadgeText}>
             {item.float_value.toFixed(4)}
@@ -115,34 +130,40 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
 
       {/* Informações - Rodapé do Card */}
       <View style={styles.footer}>
-        {/* Nome da Arma - Branco/Dourado, Bold */}
+        {/* Nome da Arma / Storage Unit - Branco/Dourado, Bold */}
         <View style={styles.nameRow}>
           <Text style={styles.weaponName} numberOfLines={1}>
-            {weapon}
+            {displayTitle}
           </Text>
-          {item.is_stattrak && (
+          {!isStorageUnit && item.is_stattrak && (
             <View style={styles.stattrakBadge}>
               <Text style={styles.stattrakText}>ST</Text>
             </View>
           )}
         </View>
-        
-        {/* Nome da Skin e Condição - Cinza/Dourado escuro */}
+
+        {/* Nome da Skin e Condição - ou "ENCRYPTED VAULT" para Storage Unit (layout consistente) */}
         <View style={styles.skinRow}>
-          {skin && (
-            <Text style={styles.skinName} numberOfLines={1}>
-              {skin}
-            </Text>
-          )}
-          {condition && (
-            <Text style={styles.condition}>
-              ({condition})
-            </Text>
+          {isStorageUnit ? (
+            <Text style={styles.encryptedVaultSubtitle}>{t('storageUnitEncryptedVault')}</Text>
+          ) : (
+            <>
+              {skin && (
+                <Text style={styles.skinName} numberOfLines={1}>
+                  {skin}
+                </Text>
+              )}
+              {condition && (
+                <Text style={styles.condition}>
+                  ({condition})
+                </Text>
+              )}
+            </>
           )}
         </View>
-        
-        {/* Quantity se > 1 */}
-        {item.quantity > 1 && (
+
+        {/* Quantity se > 1 (omit for Storage Units - badge already shows count) */}
+        {!isStorageUnit && item.quantity > 1 && (
           <Text style={styles.quantity}>x{item.quantity}</Text>
         )}
       </View>
@@ -193,6 +214,28 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.secondary,
     color: 'rgba(212, 194, 145, 0.8)', // Tactical Gold mais claro
     fontWeight: typography.weights.regular,
+  },
+  storageUnitCountBadge: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs / 2,
+    borderRadius: 6,
+  },
+  storageUnitCountText: {
+    fontSize: typography.sizes.xs - 1,
+    fontFamily: typography.fonts.monoRegular ?? typography.fonts.mono,
+    color: '#d4c291',
+    fontWeight: '600',
+  },
+  encryptedVaultSubtitle: {
+    fontSize: typography.sizes.xs,
+    fontFamily: typography.fonts.secondary,
+    color: 'rgba(180, 180, 180, 0.85)',
+    letterSpacing: 1.5,
   },
   imageContainer: {
     flex: 1,

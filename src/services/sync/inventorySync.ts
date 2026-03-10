@@ -59,6 +59,9 @@ interface SteamDescription {
   type?: string;
   tradable?: number;
   marketable?: number;
+  /** Nested descriptions (e.g. "Number of items: 42") */
+  descriptions?: Array<{ value?: string; type?: string }>;
+  fraudwarnings?: string[];
 }
 
 interface SteamInventoryPage {
@@ -88,6 +91,53 @@ const PAGE_DELAY_MS = 2000;
 const STEAM_CDN = 'https://community.akamai.steamstatic.com/economy/image/';
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// ---------------------------------------------------------------------------
+// Storage Unit helpers (robust parsing, fallbacks)
+// ---------------------------------------------------------------------------
+
+function isStorageUnit(name: string | undefined): boolean {
+  return (name?.toLowerCase().includes('storage unit') ?? false);
+}
+
+/** Extract item count from descriptions array. Returns null if not found. */
+function extractItemCount(desc: SteamDescription): number | null {
+  try {
+    const values = desc.descriptions
+      ?.map(d => d?.value)
+      .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      ?? [];
+    const text = values.join(' ');
+    // Patterns: "Number of items: 42", "42 items", "Items: 42"
+    const m = text.match(/\b(?:number\s+of\s+items?|items?)\s*:?\s*(\d+)/i)
+      ?? text.match(/(\d+)\s*items?\b/i);
+    if (m?.[1]) {
+      const n = parseInt(m[1], 10);
+      return Number.isNaN(n) ? null : n;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Extract custom display name from fraudwarnings or market_name. */
+function extractCustomName(desc: SteamDescription): string | null {
+  try {
+    const fraud = desc.fraudwarnings ?? [];
+    for (const entry of fraud) {
+      const msg = typeof entry === 'string' ? entry : (entry as { message?: string; value?: string })?.message ?? (entry as { message?: string; value?: string })?.value ?? '';
+      if (typeof msg !== 'string' || !msg) continue;
+      const m = msg.match(/renamed\s+to\s+["']([^"']+)["']/i);
+      if (m?.[1]?.trim()) return m[1].trim();
+    }
+    const mn = desc.market_name?.trim();
+    if (mn && mn !== 'Storage Unit' && mn.length > 0) return mn;
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Main entry-point
@@ -272,12 +322,20 @@ function mergeAssetsAndDescriptions(
     }
 
     // ---- Build inventory row (one per physical copy) ----
-    inventoryItems.push({
+    const baseItem: InventoryItemInput = {
       asset_id: asset.assetid,
       market_hash_name: desc.market_hash_name,
       is_stattrak: isStatTrak,
       inspect_link: inspectLink,
-    });
+    };
+
+    if (isStorageUnit(desc.market_hash_name)) {
+      baseItem.is_storage_unit = true;
+      baseItem.storage_unit_item_count = extractItemCount(desc);
+      baseItem.custom_display_name = extractCustomName(desc);
+    }
+
+    inventoryItems.push(baseItem);
 
     // ---- Build catalog row (deduplicated per market_hash_name) ----
     if (!catalogSeen.has(desc.market_hash_name)) {

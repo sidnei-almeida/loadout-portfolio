@@ -4,6 +4,7 @@ import FastImage from 'react-native-fast-image';
 import { colors, spacing, typography } from '@theme';
 import { formatCurrency } from '@utils/currency';
 import { ImagePlaceholderIcon } from '@components/common/ImagePlaceholderIcon';
+import { useLanguage } from '@contexts/LanguageContext';
 import type { Item } from '@types/item';
 
 // Helper para garantir valores seguros
@@ -57,8 +58,13 @@ const parseItemName = (name: string) => {
 };
 
 export const ItemIconView: React.FC<ItemIconViewProps> = ({ item, onPress }) => {
+  const { t } = useLanguage();
   const totalValue = (item.price || item.current_price || 0) * (item.quantity || 1);
+  const isStorageUnit = item.is_storage_unit === true;
   const { weapon, skin, condition } = parseItemName(item.market_hash_name || '');
+  const displayTitle = isStorageUnit
+    ? (item.custom_display_name ?? item.market_hash_name ?? 'Storage Unit')
+    : weapon;
 
   return (
     <TouchableOpacity
@@ -80,27 +86,35 @@ export const ItemIconView: React.FC<ItemIconViewProps> = ({ item, onPress }) => 
           </View>
         )}
         
-        {/* Nome da arma e wear no topo do card */}
+        {/* Nome da arma e wear (ou ENCRYPTED VAULT para Storage Unit) */}
         <View style={styles.nameOverlay}>
           <Text style={styles.weaponName} numberOfLines={1}>
-            {weapon}
+            {displayTitle}
           </Text>
-          {condition && (
-            <Text style={styles.condition}>{condition}</Text>
+          {isStorageUnit ? (
+            <Text style={styles.encryptedVaultSubtitle}>{t('storageUnitEncryptedVault')}</Text>
+          ) : (
+            condition && <Text style={styles.condition}>{condition}</Text>
           )}
         </View>
       </View>
 
-      {/* Nome da skin e preço */}
+      {/* Nome da skin e preço (ou [ XX ITEMS ] para Storage Unit) */}
       <View style={styles.bottomRow}>
-        {skin && (
+        {!isStorageUnit && skin && (
           <Text style={styles.skinName} numberOfLines={1}>
             {skin}
           </Text>
         )}
-        <Text style={styles.price} numberOfLines={1}>
-          {formatCurrency(totalValue)}
-        </Text>
+        {isStorageUnit ? (
+          <Text style={styles.storageUnitCountText} numberOfLines={1}>
+            [ {item.storage_unit_item_count ?? '?'} {t('storageUnitItems')} ]
+          </Text>
+        ) : (
+          <Text style={styles.price} numberOfLines={1}>
+            {formatCurrency(totalValue)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -185,6 +199,20 @@ const styles = StyleSheet.create({
     fontFamily: typography?.fonts?.secondary || 'Rajdhani',
     color: '#d4c291',
     fontWeight: '600',
+    flexShrink: 0,
+  },
+  storageUnitCountText: {
+    fontSize: 10,
+    fontFamily: typography?.fonts?.monoRegular ?? typography?.fonts?.mono ?? 'JetBrainsMono-Regular',
+    color: '#d4c291',
+    fontWeight: '600',
+    flexShrink: 0,
+  },
+  encryptedVaultSubtitle: {
+    fontSize: 8,
+    fontFamily: typography?.fonts?.secondary || 'Rajdhani',
+    color: 'rgba(180, 180, 180, 0.85)',
+    letterSpacing: 1.5,
     flexShrink: 0,
   },
 });

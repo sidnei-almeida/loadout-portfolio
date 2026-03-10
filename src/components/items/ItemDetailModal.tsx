@@ -189,10 +189,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     }
   }, [visible]);
 
-  // Carregar histórico quando período ou item mudar
+  // Carregar histórico quando período ou item mudar (skip for Storage Units)
   useEffect(() => {
-    if (!visible || !item) {
-      if (!visible) {
+    if (!visible || !item || item.is_storage_unit) {
+      if (!visible || item?.is_storage_unit) {
         setHistory(null);
         setHistoryError(null);
         setIsLoadingHistory(false);
@@ -448,7 +448,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
   if (!item) return null;
 
+  const isStorageUnit = item.is_storage_unit === true;
   const { weapon, skin, condition } = parseItemName(item.market_hash_name || '');
+  const displayTitle = isStorageUnit
+    ? (item.custom_display_name ?? item.market_hash_name ?? 'Storage Unit')
+    : weapon;
   const floatValue = item.float_value ?? 0;
   const floatPercentage = Math.min(100, Math.max(0, (floatValue / 1.0) * 100));
   const wearCondition = floatValue > 0 ? t(getWearConditionKey(floatValue)) : null;
@@ -482,23 +486,29 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             {/* LADO ESQUERDO: Identidade */}
             <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>
-                <Text style={styles.headerWeaponName}>{weapon}</Text>
-                {skin && (
+                <Text style={styles.headerWeaponName}>{displayTitle}</Text>
+                {!isStorageUnit && skin && (
                   <Text>
                     <Text style={styles.headerSeparator}> | </Text>
                     <Text style={styles.headerSkinName}>{skin}</Text>
                   </Text>
                 )}
               </Text>
-              {condition && (
+              {!isStorageUnit && condition && (
                 <Text style={styles.headerCondition}>
                   {(CONDITION_TO_KEY[condition] ? t(CONDITION_TO_KEY[condition]) : condition).toUpperCase()}
                 </Text>
               )}
             </View>
 
-            {/* LADO DIREITO: Financeiro */}
-            {(history?.summary || item.current_price || item.price) && (
+            {/* LADO DIREITO: Financeiro (omit for Storage Units) ou Badge */}
+            {isStorageUnit ? (
+              <View style={styles.headerRight}>
+                <Text style={styles.storageUnitBadgeText}>
+                  [ <Text style={styles.storageUnitBadgeNumber}>{item.storage_unit_item_count ?? '?'}</Text> {t('storageUnitItems')} ] • {t('storageUnitEncrypted')}
+                </Text>
+              </View>
+            ) : (history?.summary || item.current_price || item.price) && (
               <View style={styles.headerRight}>
                 <Text style={styles.headerPrice}>
                   {formatCurrency(
@@ -567,8 +577,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               </Text>
             </View>
 
-          {/* Seção 2: Barra de Float */}
-          {floatValue > 0 && (
+          {/* Seção 2: Barra de Float (omit for Storage Units) */}
+          {!isStorageUnit && floatValue > 0 && (
             <View style={styles.floatSection}>
               {/* Header da Seção Float */}
               <View style={styles.floatHeader}>
@@ -662,7 +672,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             </View>
           )}
 
-          {/* Seção 3: Histórico de Preço (Mini Chart) */}
+          {/* Seção 3: Histórico de Preço (omit for Storage Units) */}
+          {!isStorageUnit && (
           <View style={styles.chartSection}>
             <ChartHeader
               title={t('history')}
@@ -696,9 +707,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               )}
             </View>
           </View>
+          )}
 
-          {/* Seção 4: Cards de Estatísticas (Grid) */}
-          {history?.summary && (
+          {/* Seção 4: Cards de Estatísticas (Grid) - omit for Storage Units */}
+          {!isStorageUnit && history?.summary && (
             <View style={styles.statsSection}>
               <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
@@ -723,8 +735,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             </View>
           )}
 
-          {/* Seção 5: Análise Técnica */}
-          {history?.analysis && (
+          {/* Seção 5: Análise Técnica - omit for Storage Units */}
+          {!isStorageUnit && history?.analysis && (
             <View style={styles.analysisSection}>
               <Text style={styles.analysisSectionTitle}>{t('technicalAnalysis')}</Text>
 
@@ -961,6 +973,16 @@ const styles = StyleSheet.create({
     fontFamily: safeTypography.fonts.mono || safeTypography.fonts.primaryBold, // Usar mono para tabular-nums effect
     fontWeight: safeTypography.weights.bold,
     color: '#d4c291', // Tactical Gold
+  },
+  storageUnitBadgeText: {
+    fontSize: 12,
+    fontFamily: safeTypography.fonts.secondary,
+    color: 'rgba(180, 180, 180, 0.9)',
+  },
+  storageUnitBadgeNumber: {
+    color: '#d4c291',
+    fontFamily: safeTypography.fonts.primaryBold,
+    fontWeight: safeTypography.weights.bold,
   },
   headerTrendBadge: {
     paddingHorizontal: safeSpacing.sm, // px-2

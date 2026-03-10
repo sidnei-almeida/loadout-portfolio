@@ -12,6 +12,9 @@ export interface Item {
   asset_id?: string;
   collection?: string;
   category?: string;
+  is_storage_unit?: boolean;
+  storage_unit_item_count?: number | null;
+  custom_display_name?: string | null;
 }
 
 export interface ItemHistory {

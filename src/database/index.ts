@@ -7,7 +7,7 @@
  */
 
 import { open, type DB } from '@op-engineering/op-sqlite';
-import { DB_NAME, SCHEMA_VERSION, SCHEMA_STATEMENTS } from './schema';
+import { DB_NAME, SCHEMA_VERSION, SCHEMA_STATEMENTS, MIGRATION_V1_TO_V2 } from './schema';
 import { logger } from '../utils/logger';
 
 let _db: DB | null = null;
@@ -56,7 +56,11 @@ export async function initDatabase(): Promise<void> {
     logger.log(
       `[DB] Schema upgrade: v${currentVersion} → v${SCHEMA_VERSION}`,
     );
-    applySchema();
+    if (currentVersion === 1 && SCHEMA_VERSION === 2) {
+      runMigrationV1ToV2();
+    } else {
+      applySchema();
+    }
     setSchemaVersion(SCHEMA_VERSION);
   } else {
     _db.executeSync('PRAGMA journal_mode = WAL;');
@@ -88,6 +92,21 @@ function applySchema(): void {
 
   for (const sql of SCHEMA_STATEMENTS) {
     _db.executeSync(sql);
+  }
+}
+
+function runMigrationV1ToV2(): void {
+  if (!_db) {
+    return;
+  }
+  for (const sql of MIGRATION_V1_TO_V2) {
+    try {
+      _db.executeSync(sql);
+      logger.log(`[DB] Migration: ${sql.substring(0, 60)}...`);
+    } catch (err) {
+      logger.error('[DB] Migration failed:', err);
+      throw err;
+    }
   }
 }
 
