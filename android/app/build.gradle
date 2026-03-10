@@ -73,6 +73,13 @@ def enableProguardInReleaseBuilds = true
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Carregar keystore para release (evita Play Protect com keystore de debug)
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -101,7 +108,12 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('LOADOUT_UPLOAD_STORE_FILE')) {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else if (project.hasProperty('LOADOUT_UPLOAD_STORE_FILE')) {
                 storeFile file(LOADOUT_UPLOAD_STORE_FILE)
                 storePassword LOADOUT_UPLOAD_STORE_PASSWORD
                 keyAlias LOADOUT_UPLOAD_KEY_ALIAS

@@ -57,7 +57,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 *.keystore
+*.jks
 !debug.keystore
+android/keystore.properties
 
 # Testes e cobertura
 coverage/
@@ -98,3 +100,5 @@ vendor/bundle
 # Arquivos grandes que devem ir para LFS (se aparecerem na raiz)
 # *.mp4 *.zip etc. estão no .gitattributes com LFS
 skinfolio-backend-v2/
+android/keystore.properties.example
+README.md
